@@ -16,6 +16,13 @@
     });
   });
 
+  // --- Bevestigen voor iets verdwijnt (data-bevestig="vraag") ---
+  document.querySelectorAll("form[data-bevestig]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      if (!confirm(form.dataset.bevestig)) event.preventDefault();
+    });
+  });
+
   // --- Offline-indicator ---
   function toonStatus() {
     const offline = !navigator.onLine;
@@ -52,6 +59,26 @@
         return;
       }
       try { localStorage.removeItem(sleutel); } catch (e) {}
+    });
+  });
+
+  // --- Service worker: offline werken ---
+  if ("serviceWorker" in navigator && location.pathname !== "/login") {
+    navigator.serviceWorker.register("/sw.js").then(async () => {
+      const sw = await navigator.serviceWorker.ready;
+      // Hooguit eens per uur alle open lessen opnieuw op het toestel zetten.
+      let laatst = 0;
+      try { laatst = Number(localStorage.getItem("fond-bijgewerkt") || 0); } catch (e) {}
+      if (navigator.onLine && Date.now() - laatst > 3600 * 1000) {
+        sw.active?.postMessage("bijwerken");
+        try { localStorage.setItem("fond-bijgewerkt", String(Date.now())); } catch (e) {}
+      }
+    }).catch(() => {});
+  }
+  document.querySelectorAll('form[action="/uitloggen"]').forEach((form) => {
+    form.addEventListener("submit", () => {
+      navigator.serviceWorker?.controller?.postMessage("vergeten");
+      try { localStorage.removeItem("fond-bijgewerkt"); } catch (e) {}
     });
   });
 })();

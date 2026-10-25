@@ -16,10 +16,8 @@
   <link rel="preload" href="/static/fonts/fraunces-opsz.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/static/fonts/atkinson-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ static_url('css/fond.css') }}">
-  <script>
-    // Thema vóór het tekenen zetten, zodat de pagina niet eerst licht opflitst.
-    try { const t = localStorage.getItem("fond-thema"); if (t) document.documentElement.dataset.thema = t; } catch (e) {}
-  </script>
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+  <script src="{{ static_url('js/thema.js') }}"></script>
   <script src="{{ static_url('js/htmx.min.js') }}" defer></script>
   <script src="{{ static_url('js/app.js') }}" defer></script>
   {% block kop %}{% endblock %}

@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from fond.auth import LoginVereist, Pogingen
@@ -18,6 +19,31 @@ from fond.web import routes
 from fond.web.templates import templates
 
 STATIC = Path(__file__).parent / "static"
+
+
+# Alleen eigen bestanden laden: geen externe scripts, lettertypen of trackers.
+# Stijlattributen (bv. de breedte van een voortgangsbalk) zijn wel toegestaan.
+CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; "
+    "manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; "
+    "form-action 'self'"
+)
+
+
+class Beveiligingskoppen(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("Content-Security-Policy", CSP)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "same-origin")
+        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=()")
+        if request.url.path.startswith("/static/") and "v=" in request.url.query:
+            # Bestanden met een versie-hash veranderen nooit: lang bewaren.
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -43,6 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Volgorde telt: de laatst toegevoegde middleware draait als eerste. De sessie moet
     # er zijn voordat de loginvereiste kijkt of je bent ingelogd.
     app.add_middleware(LoginVereist)
+    app.add_middleware(Beveiligingskoppen)
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.secret_key,

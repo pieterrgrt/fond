@@ -26,11 +26,22 @@ from fond.db import BeheersteModule, LijstItem, Reflectie, Vinkje
 from fond.herhaling import te_herhalen
 from fond.schalen import schaal_recept
 from fond.voortgang import Status, Voortgang, les_status, module_status, ontbrekend, volgende_les
-from fond.web.templates import STATIC, templates
+from fond.web.templates import STATIC, static_url, templates
 
 router = APIRouter()
 
 PORTIE_KEUZES = (1, 2, 3, 4, 6)
+# Wat de service worker vooraf bewaart, naast de pagina's zelf.
+STATISCHE_BESTANDEN = (
+    "css/fond.css",
+    "js/htmx.min.js",
+    "js/app.js",
+    "js/thema.js",
+    "js/koken.js",
+    "js/lijst.js",
+    "icons/icon.svg",
+    "icons/apple-touch-icon.png",
+)
 MAX_FOTO = 15 * 1024 * 1024
 FOTO_NAAM = re.compile(r"^[0-9a-f]{32}\.jpg$")
 
@@ -484,4 +495,11 @@ def offline_lijst(cat: Cat, sessie: Db):
             for p in sorted({1, 2, 3, standaard}):
                 urls.append(f"/les/{les.id}/koken?porties={p}")
             urls.append(f"/les/{les.id}/boodschappen")
-    return JSONResponse({"urls": urls})
+    statisch = [static_url(p) for p in STATISCHE_BESTANDEN]
+    statisch += [f"/static/fonts/{f.name}" for f in sorted((STATIC / "fonts").glob("*.woff2"))]
+    return JSONResponse({"urls": urls, "statisch": statisch})
+
+
+@router.get("/offline")
+def offline(request: Request):
+    return render(request, "offline.html")

@@ -189,3 +189,25 @@ def test_woordenlijst(ingelogd):
 def test_uitloggen(ingelogd):
     ingelogd.post("/uitloggen")
     assert ingelogd.get("/", follow_redirects=False).status_code == 303
+
+
+def test_pwa_bestanden_openbaar(client):
+    assert client.get("/sw.js").status_code == 200
+    assert client.get("/manifest.webmanifest").json()["short_name"] == "Fond"
+    assert client.get("/offline").status_code == 200
+    # Maar de lijst met lessen niet.
+    assert client.get("/offline.json", follow_redirects=False).status_code == 303
+
+
+def test_offline_lijst(ingelogd):
+    data = ingelogd.get("/offline.json").json()
+    assert "/les/mise-en-place" in data["urls"]
+    assert "/les/mise-en-place/koken?porties=3" in data["urls"]
+    assert any(u.startswith("/static/css/fond.css?v=") for u in data["statisch"])
+
+
+def test_beveiligingskoppen(client):
+    r = client.get("/login")
+    assert "script-src 'self'" in r.headers["Content-Security-Policy"]
+    assert r.headers["X-Content-Type-Options"] == "nosniff"
+    assert "<script>" not in r.text  # geen inline scripts (CSP)

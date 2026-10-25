@@ -1,4 +1,4 @@
-"""Opdrachtregel: `uv run fond check`, `uv run fond hash-wachtwoord`."""
+"""Opdrachtregel: `fond check`, `fond hash-wachtwoord`, `fond backup`."""
 
 import argparse
 import getpass
@@ -42,10 +42,39 @@ def hash_wachtwoord() -> int:
     return 0
 
 
+def backup(bewaar: int = 14) -> int:
+    """Veilige kopie van de database (ook terwijl de app draait), in data/backups/.
+
+    Foto's staan als losse bestanden in data/fotos/ en hoeven niet gekopieerd te
+    worden zolang je de hele map data/ meeneemt in je server-back-up.
+    """
+    import sqlite3
+    from datetime import datetime
+
+    settings = get_settings()
+    bron = settings.data_dir / "fond.db"
+    if not bron.exists():
+        print(f"Geen database gevonden op {bron}.", file=sys.stderr)
+        return 1
+    map_ = settings.data_dir / "backups"
+    map_.mkdir(exist_ok=True)
+    doel = map_ / f"fond-{datetime.now():%Y-%m-%d-%H%M}.db"
+    with sqlite3.connect(bron) as van, sqlite3.connect(doel) as naar:
+        van.backup(naar)
+    oude = sorted(map_.glob("fond-*.db"))[:-bewaar]
+    for pad in oude:
+        pad.unlink()
+    print(f"Back-up gemaakt: {doel} ({len(oude)} oude verwijderd)")
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="fond")
     sub = parser.add_subparsers(dest="opdracht", required=True)
     sub.add_parser("check", help="valideer de inhoud in content/")
     sub.add_parser("hash-wachtwoord", help="maak een wachtwoord-hash en geheime sleutel")
+    sub.add_parser("backup", help="maak een kopie van de database in data/backups/")
     args = parser.parse_args()
-    sys.exit({"check": check, "hash-wachtwoord": hash_wachtwoord}[args.opdracht]())
+    sys.exit(
+        {"check": check, "hash-wachtwoord": hash_wachtwoord, "backup": backup}[args.opdracht]()
+    )

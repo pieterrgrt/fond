@@ -9,7 +9,7 @@
 {% for r, l in reflecties %}
   {% set toon_les = true %}
   {% include "partials/reflectie.html" %}
-  <form method="post" action="/reflectie/{{ r.id }}/verwijderen" class="inline verwijder" onsubmit="return confirm('Deze reflectie verwijderen?')">
+  <form method="post" action="/reflectie/{{ r.id }}/verwijderen" class="inline verwijder" data-bevestig="Deze reflectie verwijderen?">
     <button class="knop-link" type="submit">Verwijderen</button>
   </form>
 {% else %}

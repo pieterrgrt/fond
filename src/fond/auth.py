@@ -18,7 +18,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Paden die zonder inloggen werken: de loginpagina zelf, statische bestanden
 # (lettertypen, CSS), en wat de browser nodig heeft om de app te installeren.
-OPENBAAR = ("/login", "/static/", "/sw.js", "/manifest.webmanifest", "/gezond", "/favicon.ico")
+OPENBAAR = {"/login", "/sw.js", "/manifest.webmanifest", "/gezond", "/offline"}
+OPENBAAR_MAP = "/static/"
 
 _hasher = PasswordHasher()
 
@@ -67,7 +68,7 @@ def is_ingelogd(request: Request) -> bool:
 class LoginVereist(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         pad = request.url.path
-        if is_ingelogd(request) or pad.startswith(OPENBAAR):
+        if is_ingelogd(request) or pad in OPENBAAR or pad.startswith(OPENBAAR_MAP):
             return await call_next(request)
         if request.headers.get("HX-Request"):
             # HTMX volgt geen gewone redirect voor de hele pagina; dit wel.
