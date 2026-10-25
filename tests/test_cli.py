@@ -16,3 +16,7 @@ def test_backup(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "get_settings", lambda: settings)
     assert cli.backup() == 0
     assert len(list((tmp_path / "backups").glob("fond-*.db"))) == 1
+
+
+def test_hash_met_dubbele_dollars_uit_compose_env():
+    assert Settings(password_hash="$$argon2id$$v=19$$x").password_hash == "$argon2id$v=19$x"

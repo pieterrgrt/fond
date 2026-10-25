@@ -6,6 +6,7 @@ Geheimen staan nooit in de code: alleen in de omgeving van de server.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -25,6 +26,13 @@ class Settings(BaseSettings):
     secure_cookies: bool = False
     # Hoe lang je ingelogd blijft (dagen). Lang, want het is een app op je telefoon.
     session_days: int = 90
+
+    @field_validator("password_hash")
+    @classmethod
+    def _enkele_dollars(cls, waarde: str) -> str:
+        # Docker Compose wil $$ in .env; de app leest .env lokaal zelf. Een
+        # Argon2-hash bevat nooit $$, dus beide schrijfwijzen mogen.
+        return waarde.replace("$$", "$")
 
     @property
     def database_url(self) -> str:
