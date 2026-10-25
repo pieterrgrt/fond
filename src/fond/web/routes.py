@@ -5,6 +5,7 @@ vinkje, een portiekeuze) zonder de hele pagina te herladen.
 """
 
 import hashlib
+import hmac
 import re
 import uuid
 from collections.abc import Iterator
@@ -128,6 +129,79 @@ def uitloggen(request: Request):
 @router.get("/gezond")
 def gezond():
     return {"status": "ok"}
+
+
+# --- Widget voor de telefoon -------------------------------------------------------
+
+
+@router.get("/api/widget")
+def widget(request: Request, cat: Cat, sessie: Db):
+    """Klein overzicht voor de Scriptable-widget.
+
+    Toegang: Authorization: Bearer <FOND_WIDGET_TOKEN>.
+    """
+    token = request.app.state.settings.widget_token.strip()
+    if not token:
+        raise HTTPException(404, "Niet gevonden")
+    gegeven = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    if not hmac.compare_digest(gegeven.encode(), token.encode()):
+        return JSONResponse({"fout": "Onbekende sleutel"}, status_code=401)
+
+    vg = laad_voortgang(sessie)
+    gekookt = sessie.execute(select(Reflectie.les_id, Reflectie.gekookt_op)).all()
+    open_lessen = {les.id for les in cat.alle_lessen() if les_status(cat, vg, les) == Status.open}
+    volgende = volgende_les(cat, vg)
+
+    def les_info(les: Les | None) -> dict | None:
+        if les is None:
+            return None
+        module = cat.modules[les.meta.module]
+        return {
+            "id": les.id,
+            "titel": les.meta.titel,
+            "module": module.titel,
+            "niveau": cat.module_niveau[module.id].naam,
+            "duur": les.meta.duur,
+            "url": f"/les/{les.id}",
+        }
+
+    # Het niveau waar je nu in zit: dat van de volgende les, anders het laatste.
+    huidig = cat.module_niveau[volgende.meta.module] if volgende else cat.niveaus[-1]
+    lessen_niveau = [les for m in huidig.modules for les in cat.lessen_per_module.get(m.id, [])]
+    laatst = sessie.execute(
+        select(Reflectie.les_id, Reflectie.gekookt_op, Reflectie.cijfer)
+        .order_by(Reflectie.gekookt_op.desc(), Reflectie.id.desc())
+        .limit(1)
+    ).first()
+    return JSONResponse(
+        {
+            "volgende": les_info(volgende),
+            "niveau": {
+                "naam": huidig.naam,
+                "ondertitel": huidig.ondertitel,
+                "af": sum(1 for les in lessen_niveau if les.id in vg.afgeronde_lessen),
+                "totaal": len(lessen_niveau),
+            },
+            "niveaus": [n.naam for n in cat.niveaus],
+            "af": len(vg.afgeronde_lessen),
+            "totaal": len(cat.alle_lessen()),
+            "herhalingen": [
+                {"techniek": h.techniek.naam, "dagen_over": h.dagen_over_tijd(date.today())}
+                for h in te_herhalen(cat, gekookt, date.today(), open_lessen)[:3]
+            ],
+            "laatst": (
+                {
+                    "titel": cat.lessen[laatst.les_id].meta.titel,
+                    "op": laatst.gekookt_op.isoformat(),
+                    "cijfer": laatst.cijfer,
+                }
+                if laatst and laatst.les_id in cat.lessen
+                else None
+            ),
+            "boodschappen": len(sessie.scalars(select(LijstItem.les_id)).all()),
+        },
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 # --- Cursusoverzicht --------------------------------------------------------------

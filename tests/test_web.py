@@ -211,3 +211,38 @@ def test_beveiligingskoppen(client):
     assert "script-src 'self'" in r.headers["Content-Security-Policy"]
     assert r.headers["X-Content-Type-Options"] == "nosniff"
     assert "<script>" not in r.text  # geen inline scripts (CSP)
+
+
+# --- Widget -----------------------------------------------------------------------
+
+
+@pytest.fixture
+def widget_client(tmp_path, wachtwoord_hash):
+    settings = Settings(
+        content_dir=PROJECT_ROOT / "content",
+        data_dir=tmp_path,
+        password_hash=wachtwoord_hash,
+        secret_key="test",
+        widget_token="sleutel",
+    )
+    with TestClient(create_app(settings)) as c:
+        yield c
+
+
+def test_widget_uit_zonder_sleutel(client):
+    assert client.get("/api/widget", headers={"Authorization": "Bearer x"}).status_code == 404
+
+
+def test_widget_vraagt_juiste_sleutel(widget_client):
+    assert widget_client.get("/api/widget").status_code == 401
+    fout = {"Authorization": "Bearer fout"}
+    assert widget_client.get("/api/widget", headers=fout).status_code == 401
+
+
+def test_widget_geeft_volgende_les(widget_client):
+    r = widget_client.get("/api/widget", headers={"Authorization": "Bearer sleutel"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["volgende"]["titel"] and data["volgende"]["url"].startswith("/les/")
+    assert data["niveau"]["naam"] == "Commis" and data["niveau"]["af"] == 0
+    assert data["totaal"] > 0 and data["herhalingen"] == [] and data["laatst"] is None
