@@ -234,6 +234,6 @@ geschreven en heeft eigen tests in `tests/`.
 
 ## Lettertypen
 
-[Fraunces](https://github.com/undercasetype/Fraunces) en
+[Bricolage Grotesque](https://github.com/ateliertriay/bricolage) (koppen) en
 [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/), beide onder de
 SIL Open Font License; zie `src/fond/static/fonts/`.
