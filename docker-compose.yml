@@ -1,10 +1,8 @@
 # Fond op de server. Starten: `docker compose up -d --build`
 #
-# Twee manieren waarop de app bereikbaar is:
-# 1. Voor nginx (die zelf in Docker draait) via het gedeelde Docker-netwerk
-#    `proxy`: nginx praat met http://fond:8000. Dat is de route voor het internet.
-# 2. Op de host alleen via 127.0.0.1:8098, voor jezelf (curl, een SSH-tunnel).
-#    Nooit op 0.0.0.0: dan zou de app buiten nginx om openstaan.
+# De app luistert alleen op 127.0.0.1:8098, net als je andere apps. nginx (op de
+# server zelf) stuurt het verkeer voor fond.regoort.me daarheen. Nooit op 0.0.0.0:
+# dan zou de app buiten nginx om openstaan.
 services:
   fond:
     build: .
@@ -22,9 +20,6 @@ services:
       - ./content:/app/content:ro
     ports:
       - "127.0.0.1:8098:8000"
-    networks:
-      - default
-      - proxy
     deploy:
       resources:
         limits:
@@ -34,10 +29,3 @@ services:
       options:
         max-size: "5m"
         max-file: "3"
-
-networks:
-  proxy:
-    # Het netwerk waar je nginx-container in zit. Heet het bij jou anders, zet dan
-    # PROXY_NETWORK in .env (zie `docker network ls`).
-    name: ${PROXY_NETWORK:-proxy}
-    external: true

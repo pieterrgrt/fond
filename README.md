@@ -46,18 +46,13 @@ uv run fond check       # valideer de lesinhoud
 
 ## Deployen op de server
 
-De app draait als één container naast je nginx-container. Nginx heeft het
-TLS-certificaat en praat via een gedeeld Docker-netwerk met de app. Daarnaast is de
-app op de server zelf bereikbaar op `127.0.0.1:8098` (handig voor `curl` of een
-SSH-tunnel), maar nooit van buitenaf.
+De app draait als één container en luistert alleen op `127.0.0.1:8098`, net als
+je andere apps. nginx op de server heeft het TLS-certificaat en stuurt het
+verkeer daarheen.
 
 ```
-internet ─▶ :443 SNI-router ─▶ 127.0.0.1:8444 nginx (TLS) ─▶ fond:8000 (Docker-netwerk)
+internet ─▶ :443 SNI-router ─▶ 127.0.0.1:8444 nginx (TLS) ─▶ 127.0.0.1:8098 Fond
 ```
-
-> **Waarom niet gewoon `127.0.0.1:8098` in nginx?** Omdat je nginx zelf in een
-> container draait. Binnen die container betekent `127.0.0.1` de nginx-container,
-> niet de server. Via een gedeeld Docker-netwerk vinden containers elkaar op naam.
 
 ### Eenmalig
 
@@ -66,43 +61,31 @@ internet ─▶ :443 SNI-router ─▶ 127.0.0.1:8444 nginx (TLS) ─▶ fond:80
    ```sh
    git clone git@github.com:pieterrgrt/fond.git ~/fond && cd ~/fond
    ```
-3. **Netwerk**: kijk hoe het netwerk van je nginx-container heet:
-   ```sh
-   docker network ls
-   docker inspect <nginx-container> -f '{{json .NetworkSettings.Networks}}'
-   ```
-   Bestaat er nog geen gedeeld netwerk, maak er dan een en koppel nginx eraan:
-   ```sh
-   docker network create proxy
-   docker network connect proxy <nginx-container>   # of zet het in nginx' compose-bestand
-   ```
-4. **Instellingen**:
+3. **Instellingen**:
    ```sh
    cp .env.example .env
    docker compose build
    docker compose run --rm fond fond hash-wachtwoord   # plak de uitvoer in .env
    ```
-   Zet `PROXY_NETWORK` in `.env` als je netwerk niet `proxy` heet.
-5. **Datamap** (de container draait als gebruiker 1000, niet als root):
+4. **Datamap** (de container draait als gebruiker 1000, niet als root):
    ```sh
    mkdir -p data && sudo chown 1000:1000 data
    ```
-6. **Starten**:
+5. **Starten**:
    ```sh
    docker compose up -d
    curl -s 127.0.0.1:8098/gezond     # {"status":"ok"}
    ```
-7. **Certificaat**: vraag het aan zoals voor je andere subdomeinen (bv. certbot).
-8. **Nginx**: kopieer [`deploy/nginx/fond.regoort.me.conf`](deploy/nginx/fond.regoort.me.conf)
-   naar je nginx-configuratie, controleer de certificaatpaden, en:
+6. **Certificaat**: vraag het aan zoals voor je andere subdomeinen (bv. certbot).
+7. **Nginx**: zet [`deploy/nginx/fond.regoort.me.conf`](deploy/nginx/fond.regoort.me.conf)
+   in `/etc/nginx/sites-available/` en link het in `sites-enabled/`. Neem de
+   `listen`- en `ssl_`-regels over uit een serverblok dat al werkt. Dan:
    ```sh
-   docker exec <nginx-container> nginx -t && docker exec <nginx-container> nginx -s reload
+   nginx -t && systemctl reload nginx
    ```
-   Gebruikt je SNI-router het PROXY-protocol? Dan staat onderaan dat bestand wat je
-   moet aanzetten.
-9. **SNI-router**: als die per domein routeert, voeg `fond.regoort.me` toe met als
+8. **SNI-router**: als die per domein routeert, voeg `fond.regoort.me` toe met als
    doel `127.0.0.1:8444` (zoals je andere sites).
-10. **Installeren op je telefoon**: open <https://fond.regoort.me> in Safari, log in,
+9. **Installeren op je telefoon**: open <https://fond.regoort.me> in Safari, log in,
     en kies *Deel → Zet op beginscherm*.
 
 ### Bijwerken
