@@ -1,5 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#9b3a16"/>
-  <text x="236" y="362" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="330" fill="#fffaf0">F</text>
-  <circle cx="352" cy="346" r="26" fill="#f2dac8"/>
+  <g id="merk">
+    <g transform="rotate(-5 256 256)" fill="none" stroke="#fffaf0" stroke-width="66" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M178 400 C 170 320, 172 220, 186 128"/>
+      <path d="M176 134 C 240 118, 300 120, 362 132"/>
+      <path d="M182 264 C 224 254, 268 254, 310 262"/>
+    </g>
+    <circle cx="366" cy="388" r="30" fill="#f2dac8"/>
+  </g>
 </svg>
