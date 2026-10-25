@@ -21,8 +21,9 @@
     {% for r in regels %}
     <li>
       <span class="hoeveelheid">{{ r.tekst if r.hoeveelheid is not none else '' }}</span>
-      <span class="ingredient">{{ r.ingredient.naam }}{% if r.hoeveelheid is none %} <span class="meta">naar smaak</span>{% endif %}
-        {% if r.bron.notitie %}<span class="notitie">, {{ r.bron.notitie }}</span>{% endif %}
+      <span class="ingredient">{{ r.ingredient.naam }}
+        {%- if r.bron.notitie %}<span class="notitie">, {{ r.bron.notitie }}</span>{% endif %}
+        {%- if r.hoeveelheid is none %} <span class="meta">naar smaak</span>{% endif %}
         <span class="duits" lang="de">{{ r.ingredient.naam_de }}</span></span>
     </li>
     {% endfor %}
