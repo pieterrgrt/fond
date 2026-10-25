@@ -18,7 +18,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Paden die zonder inloggen werken: de loginpagina zelf, statische bestanden
 # (lettertypen, CSS), en wat de browser nodig heeft om de app te installeren.
-OPENBAAR = {"/login", "/sw.js", "/manifest.webmanifest", "/gezond", "/offline"}
+# /api/widget regelt zelf de toegang, met een vaste sleutel (zie routes.widget).
+OPENBAAR = {"/login", "/sw.js", "/manifest.webmanifest", "/gezond", "/offline", "/api/widget"}
 OPENBAAR_MAP = "/static/"
 
 _hasher = PasswordHasher()

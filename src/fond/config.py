@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     secure_cookies: bool = False
     # Hoe lang je ingelogd blijft (dagen). Lang, want het is een app op je telefoon.
     session_days: int = 90
+    # Vaste sleutel voor de widget op je telefoon (GET /api/widget). Leeg = uit.
+    widget_token: str = ""
 
     @field_validator("password_hash")
     @classmethod
