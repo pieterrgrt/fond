@@ -10,21 +10,16 @@
   font-display: swap;
 }
 @font-face {
-  font-family: "Atkinson Hyperlegible";
-  src: url("/static/fonts/atkinson-400-normal.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Figtree";
+  src: url("/static/fonts/figtree-normal.woff2") format("woff2-variations");
+  font-weight: 300 900;
+  font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: "Atkinson Hyperlegible";
-  src: url("/static/fonts/atkinson-700-normal.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Atkinson Hyperlegible";
-  src: url("/static/fonts/atkinson-400-italic.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Figtree";
+  src: url("/static/fonts/figtree-italic.woff2") format("woff2-variations");
+  font-weight: 300 900;
   font-style: italic;
   font-display: swap;
 }
@@ -44,8 +39,9 @@
   --schaduw: 0 1px 0 rgb(80 60 30 / 6%), 0 6px 20px -12px rgb(80 60 30 / 35%);
 
   --kop: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --tekst: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --maat: 1.125rem;
+  --tekst: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --maat: 1.0625rem;
+  --cijfer: Georgia, "Iowan Old Style", "Palatino Linotype", serif; /* Romeinse cijfers: een I met schreven */
   --rond: 14px;
   --raak: 48px; /* minimale aanraakhoogte: vieze handen, grote vingers */
   --breedte: 42rem;
@@ -171,7 +167,7 @@ p { margin: 0 0 .8em; }
   color: var(--accent); margin: 0 0 .25rem;
 }
 .meta { color: var(--zacht); font-size: .95rem; }
-.inleiding { font-size: 1.1rem; color: var(--zacht); }
+.inleiding { font-size: 1.075rem; color: var(--zacht); }
 .ondertitel { font-family: var(--kop); font-weight: 500; color: var(--zacht); margin: 0; }
 .uitgelicht { border-left: 5px solid var(--accent); }
 .melding { padding: .6rem .9rem; border-radius: 10px; background: var(--groen-zacht); }
@@ -227,7 +223,7 @@ label > input, label > textarea { margin-top: .35rem; font-weight: 400; }
 .niveau-kop { display: flex; gap: .75rem; align-items: center; }
 .niveau-kop h2 { margin: 0; font-size: 1.8rem; }
 .niveau-nummer {
-  font-family: var(--tekst); font-size: 2rem; font-weight: 400; line-height: 1;
+  font-family: var(--cijfer); font-size: 2rem; font-weight: 400; line-height: 1;
   color: var(--accent); min-width: 2rem; text-align: center;
 }
 .niveau-uitleg { margin-top: .5rem; }
@@ -288,7 +284,7 @@ a.les-link:hover { background: var(--kaart); }
 .herhaalt { color: var(--zacht); }
 .les-sectie { margin-top: 1.75rem; }
 .les-sectie > h2 { display: flex; align-items: baseline; gap: .75rem; border-bottom: 1px solid var(--lijn); padding-bottom: .3rem; }
-.sectie-nummer { font-family: var(--tekst); font-weight: 400; color: var(--accent); font-size: 1.3rem; min-width: 1.5rem; }
+.sectie-nummer { font-family: var(--cijfer); font-weight: 400; color: var(--accent); font-size: 1.3rem; min-width: 1.5rem; }
 .prose ul, .prose ol { padding-left: 1.3rem; }
 .prose li { margin: .25rem 0; }
 .prose strong { font-weight: 700; }
@@ -396,7 +392,7 @@ a.les-link:hover { background: var(--kaart); }
 .leeg { text-align: center; }
 
 @media (min-width: 48rem) {
-  :root { --maat: 1.1875rem; }
+  :root { --maat: 1.09375rem; }
   .tabbalk { inset: 0 0 auto auto; top: 0; grid-template-columns: repeat(4, auto); background: none; border: 0; height: 3.1rem; padding: 0 1rem 0 0; }
   .tabbalk a { flex-direction: row; min-height: 0; gap: .4rem; padding: 0 .9rem; font-size: .95rem; z-index: 6; }
   .tabbalk svg { width: 20px; height: 20px; }

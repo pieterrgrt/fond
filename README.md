@@ -235,5 +235,5 @@ geschreven en heeft eigen tests in `tests/`.
 ## Lettertypen
 
 [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) (koppen) en
-[Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/), beide onder de
+[Figtree](https://github.com/erikdkennedy/figtree) (tekst), beide onder de
 SIL Open Font License; zie `src/fond/static/fonts/`.
