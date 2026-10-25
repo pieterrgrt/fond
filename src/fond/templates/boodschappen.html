@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block titel %}Boodschappen{% endblock %}
+{% block inhoud %}
+<header class="pagina-kop">
+  {% if eigen %}
+  <h1>Boodschappen</h1>
+  <p class="inleiding">Je weeklijst, op volgorde van je route door de Aldi.</p>
+  {% else %}
+  <p class="kruimels"><a href="/les/{{ les.id }}?porties={{ porties }}#recept">← {{ les.meta.titel }}</a></p>
+  <h1>{{ les.meta.recept.naam }}</h1>
+  <p class="inleiding">Boodschappen voor {{ porties }} {{ 'portie' if porties == 1 else 'porties' }}.</p>
+  <form method="post" action="/boodschappen/toevoegen" class="inline">
+    <input type="hidden" name="les_id" value="{{ les.id }}">
+    <input type="hidden" name="porties" value="{{ porties }}">
+    <button class="knop" type="submit">+ Zet op mijn weeklijst</button>
+  </form>
+  {% endif %}
+</header>
+
+{% if eigen and lijst.lessen %}
+<section class="kaart op-de-lijst">
+  <p class="label">Op de lijst</p>
+  <ul class="kale-lijst">
+    {% for l, p in lijst.lessen %}
+    <li class="lijst-les">
+      <a href="/les/{{ l.id }}?porties={{ p }}">{{ l.meta.recept.naam if l.meta.recept else l.meta.titel }}</a>
+      <span class="meta">{{ p }} {{ 'portie' if p == 1 else 'porties' }}</span>
+      <form method="post" action="/boodschappen/verwijderen" class="inline">
+        <input type="hidden" name="les_id" value="{{ l.id }}">
+        <button class="knop-link klein" type="submit" aria-label="{{ l.meta.titel }} van de lijst halen">✕</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if lijst.leeg %}
+<section class="kaart leeg">
+  <p>Je lijst is leeg. Kies bij een recept het aantal porties en tik op <em>Zet op mijn weeklijst</em>. Gelijke ingrediënten worden opgeteld.</p>
+  <a class="knop knop-hoofd" href="/">Naar de cursus</a>
+</section>
+{% else %}
+<div class="lijst" data-lijst="{{ sleutel }}">
+  {% for groep in lijst.groepen %}
+  <section class="afdeling{% if groep.afdeling.id == 'check-thuis' %} check-thuis{% endif %}">
+    <h2>{{ groep.afdeling.naam }} <span class="duits" lang="de">{{ groep.afdeling.naam_de }}</span></h2>
+    {% if groep.afdeling.id == 'check-thuis' %}<p class="meta">Basisvoorraad. Kijk of je genoeg in huis hebt.</p>{% endif %}
+    <ul class="boodschappen">
+      {% for r in groep.regels %}
+      <li>
+        <button type="button" class="boodschap" data-item="{{ r.ingredient.id }}" aria-pressed="false">
+          <span class="vakje" aria-hidden="true"></span>
+          <span class="boodschap-tekst">
+            <span class="boodschap-naam">{{ r.ingredient.naam_de }}</span>
+            <span class="boodschap-nl">{{ r.ingredient.naam }} · <strong>{{ r.tekst }}</strong>{% if r.verpakking_tekst %} → {{ r.verpakking_tekst }}{% endif %}</span>
+          </span>
+          {% if r.prijs %}<span class="boodschap-prijs">{{ r.prijs | euro }}</span>{% endif %}
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+
+<section class="kaart totaal">
+  <p><span class="label">Schatting</span><br><strong class="bedrag">± {{ lijst.schatting | euro }}</strong></p>
+  <p class="meta">Indicatieve Aldi-prijzen, zonder basisvoorraad. Je budget: € 50–60 per week.</p>
+</section>
+
+<div class="knoppen">
+  <button type="button" class="knop" data-kopieer>Kopieer als tekst</button>
+  <button type="button" class="knop" data-wis-vinkjes>Vinkjes wissen</button>
+  {% if eigen %}
+  <form method="post" action="/boodschappen/leegmaken" class="inline" onsubmit="return confirm('De hele lijst leegmaken?')">
+    <button class="knop-link" type="submit">Lijst leegmaken</button>
+  </form>
+  {% endif %}
+</div>
+<script>
+  // Afvinken gebeurt op je telefoon zelf: in de winkel heb je niet altijd bereik.
+  (function () {
+    const lijst = document.querySelector("[data-lijst]");
+    const sleutel = "fond-lijst-" + lijst.dataset.lijst;
+    let af;
+    try { af = new Set(JSON.parse(localStorage.getItem(sleutel) || "[]")); } catch (e) { af = new Set(); }
+    const knoppen = lijst.querySelectorAll("[data-item]");
+    const zet = (k) => { const aan = af.has(k.dataset.item); k.classList.toggle("aan", aan); k.setAttribute("aria-pressed", aan); };
+    knoppen.forEach((k) => {
+      zet(k);
+      k.addEventListener("click", () => {
+        af.has(k.dataset.item) ? af.delete(k.dataset.item) : af.add(k.dataset.item);
+        try { localStorage.setItem(sleutel, JSON.stringify([...af])); } catch (e) {}
+        zet(k);
+      });
+    });
+    document.querySelector("[data-wis-vinkjes]").addEventListener("click", () => {
+      af.clear(); try { localStorage.removeItem(sleutel); } catch (e) {} knoppen.forEach(zet);
+    });
+    document.querySelector("[data-kopieer]").addEventListener("click", async (e) => {
+      const regels = [];
+      lijst.querySelectorAll(".afdeling").forEach((sec) => {
+        regels.push("", sec.querySelector("h2").firstChild.textContent.trim());
+        sec.querySelectorAll(".boodschap").forEach((b) => {
+          regels.push("- " + b.querySelector(".boodschap-naam").textContent + " (" + b.querySelector(".boodschap-nl").textContent.trim() + ")");
+        });
+      });
+      try { await navigator.clipboard.writeText(regels.join("\n").trim()); e.target.textContent = "Gekopieerd ✓"; }
+      catch (err) { e.target.textContent = "Kopiëren lukte niet"; }
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

@@ -51,6 +51,8 @@ class Verpakking(Strikt):
     eenheid: Eenheid
     # Indicatieve prijs in euro bij de Aldi Süd. Prijzen wisselen: het is een schatting.
     prijs: float | None = Field(default=None, ge=0)
+    # Hoe het in de winkel ligt, bv. "net van 3 bollen". Zonder: "500 g".
+    omschrijving: str | None = None
 
 
 class Ingredient(Strikt):

@@ -13,19 +13,19 @@ ui:
   naam_de: Zwiebeln
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.29}
+  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.29, omschrijving: "net van 1 kg (± 8 uien)"}
 rode-ui:
   naam: Rode ui
   naam_de: Rote Zwiebeln
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 5, eenheid: stuk, prijs: 0.99}
+  verpakking: {hoeveelheid: 5, eenheid: stuk, prijs: 0.99, omschrijving: "net van 500 g (± 5 uien)"}
 knoflook:
   naam: Knoflook
   naam_de: Knoblauch
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 30, eenheid: teen, prijs: 1.19}
+  verpakking: {hoeveelheid: 30, eenheid: teen, prijs: 1.19, omschrijving: "net van 3 bollen"}
 gember:
   naam: Verse gember
   naam_de: Ingwer
@@ -36,19 +36,19 @@ paprika:
   naam_de: Paprika rot
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 3, eenheid: stuk, prijs: 2.29}
+  verpakking: {hoeveelheid: 3, eenheid: stuk, prijs: 2.29, omschrijving: "zak van 3"}
 wortel:
   naam: Wortel
   naam_de: Karotten
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 1.19}
+  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 1.19, omschrijving: "zak van 1 kg"}
 bleekselderij:
   naam: Bleekselderij
   naam_de: Staudensellerie
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.49}
+  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.49, omschrijving: "struik"}
 komkommer:
   naam: Komkommer
   naam_de: Salatgurke
@@ -70,13 +70,13 @@ citroen:
   naam_de: Zitronen
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49}
+  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49, omschrijving: "net van 4"}
 limoen:
   naam: Limoen
   naam_de: Limetten
   afdeling: groente-fruit
   heel: true
-  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49}
+  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49, omschrijving: "net van 4"}
 lente-ui:
   naam: Lente-ui
   naam_de: Frühlingszwiebeln
@@ -152,7 +152,7 @@ tomatenpuree:
   naam_de: Tomatenmark
   afdeling: conserven
   voorraad: true
-  verpakking: {hoeveelheid: 13, eenheid: el, prijs: 0.89}
+  verpakking: {hoeveelheid: 13, eenheid: el, prijs: 0.89, omschrijving: "tube van 200 g"}
 olijven:
   naam: Zwarte olijven
   naam_de: Kalamata Oliven
@@ -290,7 +290,7 @@ eieren:
   naam_de: Eier aus Freilandhaltung
   afdeling: zuivel
   heel: true
-  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 2.79}
+  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 2.79, omschrijving: "doos van 10"}
 
 # --- Kaas ---
 feta:
@@ -336,7 +336,7 @@ diepvries-kruiden:
   naam: Kruidenmix (diepvries)
   naam_de: 8-Kräuter (TK)
   afdeling: diepvries
-  verpakking: {hoeveelheid: 10, eenheid: el, prijs: 0.99}
+  verpakking: {hoeveelheid: 10, eenheid: el, prijs: 0.99, omschrijving: "zakje van 50 g"}
 diepvries-spinazie:
   naam: Bladspinazie (diepvries)
   naam_de: Blattspinat (TK)

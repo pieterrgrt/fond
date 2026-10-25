@@ -54,6 +54,8 @@ class Regel:
             and verpakking.hoeveelheid == 1
         ):
             return None  # "2 blikken" is al duidelijk
+        if verpakking.omschrijving:
+            return f"{aantal}× {verpakking.omschrijving}"
         return f"{aantal}× {toon(verpakking.hoeveelheid, verpakking.eenheid)}"
 
     @property

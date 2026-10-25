@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titel %}Koken: {{ les.meta.recept.naam }}{% endblock %}
+{% block body_klasse %}kookmodus{% endblock %}
+{% block kop %}<script src="{{ static_url('js/koken.js') }}" defer></script>{% endblock %}
+{% block body %}
+{% set recept = les.meta.recept %}
+<div class="koken" data-les="{{ les.id }}" data-porties="{{ porties }}">
+  <header class="koken-kop">
+    <a class="koken-sluit" href="/les/{{ les.id }}?porties={{ porties }}#recept" aria-label="Kookmodus sluiten">✕</a>
+    <div class="koken-titel">
+      <span>{{ recept.naam }}</span>
+      <span class="meta">{{ porties }} {{ 'portie' if porties == 1 else 'porties' }} · <span data-teller>1</span>/{{ recept.stappen | length + 2 }}</span>
+    </div>
+    <button type="button" class="wakelock" data-wakelock aria-live="polite" title="Scherm blijft aan">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+      <span data-wakelock-tekst>scherm aan</span>
+    </button>
+  </header>
+
+  <div class="koken-dias" data-dias>
+    <section class="dia" data-dia aria-label="Mise en place">
+      <p class="dia-label">Mise en place</p>
+      <p class="dia-uitleg">Zet alles klaar voordat het vuur aangaat. Tik af wat er staat.</p>
+      {% for groep, regels in ingredient_groepen.items() %}
+      {% if groep %}<h2 class="dia-groep">{{ groep }}</h2>{% endif %}
+      <ul class="klaarzetten">
+        {% for r in regels %}
+        <li><button type="button" class="klaar-knop" data-klaar="{{ r.ingredient.id }}-{{ loop.index }}-{{ groep or '' }}">
+          <span class="vakje" aria-hidden="true"></span>
+          <span><strong>{{ r.tekst if r.hoeveelheid is not none else '' }}</strong> {{ r.ingredient.naam }}{% if r.bron.notitie %}<span class="notitie">, {{ r.bron.notitie }}</span>{% endif %}</span>
+        </button></li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </section>
+
+    {% for stap in recept.stappen %}
+    <section class="dia" data-dia aria-label="Stap {{ loop.index }}" hidden>
+      <p class="dia-label">Stap {{ loop.index }} van {{ recept.stappen | length }}</p>
+      <p class="stap-tekst">{{ stap.tekst }}</p>
+      {% if stap.timer %}
+      <button type="button" class="knop knop-hoofd timer-start" data-timer="{{ stap.timer_seconden }}" data-label="{{ stap.timer_label or 'Stap ' ~ loop.index }}">
+        ⏱ Start timer · {{ stap.timer_seconden | tijd }}
+      </button>
+      {% endif %}
+    </section>
+    {% endfor %}
+
+    <section class="dia dia-eind" data-dia aria-label="Klaar" hidden>
+      <p class="dia-label">Klaar</p>
+      <p class="stap-tekst">Proef nog één keer. Eet smakelijk.</p>
+      {% if recept.meal_prep %}<p>Laat de bakjes open afkoelen en zet ze binnen een uur in de koelkast. Houdbaar: {{ recept.meal_prep.koelkast_dagen }} dagen.</p>{% endif %}
+      <a class="knop knop-hoofd" href="/les/{{ les.id }}?porties={{ porties }}#proeven">Naar proeven</a>
+    </section>
+  </div>
+
+  <div class="timers" data-timers aria-live="assertive"></div>
+
+  <nav class="koken-nav">
+    <button type="button" class="knop" data-vorige>← Vorige</button>
+    <button type="button" class="knop knop-hoofd" data-volgende>Volgende →</button>
+  </nav>
+</div>
+<noscript><p class="pagina">De kookmodus heeft JavaScript nodig voor de timers. Het recept staat ook gewoon op <a href="/les/{{ les.id }}#recept">de lespagina</a>.</p></noscript>
+{% endblock %}
