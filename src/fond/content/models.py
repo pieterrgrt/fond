@@ -32,7 +32,7 @@ class Eenheid(StrEnum):
     g = "g"
     kg = "kg"
     ml = "ml"
-    l = "l"
+    l = "l"  # noqa: E741 (liter)
     el = "el"  # eetlepel, 15 ml
     tl = "tl"  # theelepel, 5 ml
     stuk = "stuk"

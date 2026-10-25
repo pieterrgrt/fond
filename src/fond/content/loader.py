@@ -193,8 +193,9 @@ def laad_catalogus(content_dir: Path) -> Catalogus:
             fouten.append(f"{bron}: {exc}")
             continue
 
-        les_fouten = _controleer_les(meta, bron, modules, module_niveau, pad.parent.name,
-                                     ingredienten, technieken)
+        les_fouten = _controleer_les(
+            meta, bron, modules, module_niveau, pad.parent.name, ingredienten, technieken
+        )
         ruwe_secties = splits_secties(body)
         titels = [t for t, _ in ruwe_secties]
         for verplicht in VERPLICHTE_SECTIES:
@@ -223,8 +224,10 @@ def laad_catalogus(content_dir: Path) -> Catalogus:
         technieken=technieken,
     )
     for module_id in modules:
-        rij = sorted((les for les in lessen.values() if les.meta.module == module_id),
-                     key=lambda les: les.meta.volgorde)
+        rij = sorted(
+            (les for les in lessen.values() if les.meta.module == module_id),
+            key=lambda les: les.meta.volgorde,
+        )
         volgordes = [les.meta.volgorde for les in rij]
         if len(set(volgordes)) != len(volgordes):
             fouten.append(f"module '{module_id}': twee lessen met dezelfde volgorde")
@@ -236,8 +239,9 @@ def laad_catalogus(content_dir: Path) -> Catalogus:
     return catalogus
 
 
-def _controleer_les(meta: LesMeta, bron: str, modules, module_niveau, map_naam,
-                    ingredienten, technieken) -> list[str]:
+def _controleer_les(
+    meta: LesMeta, bron: str, modules, module_niveau, map_naam, ingredienten, technieken
+) -> list[str]:
     fouten = []
     if meta.module not in modules:
         return [f"{bron}: onbekende module '{meta.module}'"]
