@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titel %}Termen{% endblock %}
+{% block inhoud %}
+<header class="pagina-kop">
+  <h1>Termen &amp; technieken</h1>
+  <p class="inleiding">De taal van de keuken. Franse termen staan schuin, met wat ze betekenen.</p>
+</header>
+<dl class="woordenlijst">
+  {% for t in termen %}
+  <div class="term-item" id="{{ t.id }}">
+    <dt>{% if t.frans %}<i lang="fr">{{ t.frans }}</i>{% if t.frans.lower() != t.naam.lower() %} <span class="meta">· {{ t.naam }}</span>{% endif %}{% else %}{{ t.naam }}{% endif %}</dt>
+    <dd>{{ t.uitleg }}
+      {% if bron[t.id] %}<br><a class="meta" href="/les/{{ bron[t.id].id }}">Aangeleerd in: {{ bron[t.id].meta.titel }}</a>{% endif %}</dd>
+  </div>
+  {% endfor %}
+</dl>
+{% endblock %}

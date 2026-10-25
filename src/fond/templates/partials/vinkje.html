@@ -1,0 +1,6 @@
+<li id="punt-{{ punt }}">
+  <button type="button" class="vink-knop{% if aan %} aan{% endif %}" role="checkbox" aria-checked="{{ 'true' if aan else 'false' }}"
+          hx-post="/les/{{ les.id }}/vinkje/{{ punt }}" hx-target="#punt-{{ punt }}" hx-swap="outerHTML">
+    <span class="vakje" aria-hidden="true"></span><span>{{ tekst }}</span>
+  </button>
+</li>

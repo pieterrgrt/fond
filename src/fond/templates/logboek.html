@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titel %}Logboek{% endblock %}
+{% block inhoud %}
+<header class="pagina-kop">
+  <h1>Logboek</h1>
+  <p class="inleiding">Alles wat je hebt gekookt, met wat je ervan vond.</p>
+  {% if reflecties %}<p class="meta">{{ reflecties | length }} keer gekookt · gemiddeld een {{ gemiddeld | getal }}</p>{% endif %}
+</header>
+{% for r, l in reflecties %}
+  {% set toon_les = true %}
+  {% include "partials/reflectie.html" %}
+  <form method="post" action="/reflectie/{{ r.id }}/verwijderen" class="inline verwijder" onsubmit="return confirm('Deze reflectie verwijderen?')">
+    <button class="knop-link" type="submit">Verwijderen</button>
+  </form>
+{% else %}
+<section class="kaart leeg">
+  <p>Nog niets gekookt. Na elke les leg je hier vast hoe het ging: wat lukte, wat niet, en wat je volgende keer anders doet.</p>
+  <a class="knop knop-hoofd" href="/">Naar de cursus</a>
+</section>
+{% endfor %}
+{% endblock %}

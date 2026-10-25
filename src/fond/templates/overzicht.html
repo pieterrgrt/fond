@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block titel %}Cursus{% endblock %}
+{% block inhoud %}
+{% set romeins = ['I', 'II', 'III', 'IV', 'V'] %}
+
+{% if melding == 'zelftoets' %}
+<p class="melding fout" role="alert">Vink alle uitspraken aan om een module als beheerst te markeren.</p>
+{% endif %}
+
+{% if volgende %}
+<section class="kaart uitgelicht">
+  <p class="label">{% if aantal_af %}Volgende les{% else %}Begin hier{% endif %}</p>
+  <h1 class="kaart-titel">{{ volgende.meta.titel }}</h1>
+  <p>{{ volgende.meta.samenvatting }}</p>
+  <p class="meta">{{ volgende.meta.duur | duur }}{% if volgende.meta.recept %} · {{ volgende.meta.recept.naam }}{% endif %}</p>
+  <a class="knop knop-hoofd" href="/les/{{ volgende.id }}">Naar de les</a>
+</section>
+{% elif aantal_af %}
+<section class="kaart uitgelicht">
+  <p class="label">Bijgewerkt</p>
+  <h1 class="kaart-titel">Alle open lessen zijn af.</h1>
+  <p>Nieuwe lessen komen erbij via git. Tot die tijd: herhaal een gerecht en kijk in je logboek wat je anders wilde doen.</p>
+</section>
+{% endif %}
+
+{% if herhalingen %}
+<section class="kaart herhalen">
+  <p class="label">Tijd om te herhalen</p>
+  <ul class="kale-lijst">
+    {% for h in herhalingen %}
+    <li>
+      <strong><a class="term" href="/woordenlijst#{{ h.techniek.id }}">{{ h.techniek.frans or h.techniek.naam }}</a></strong>
+      <span class="meta">{{ h.keer_geoefend }}× geoefend, laatst {{ h.laatst | datum }}</span>
+      {% if h.lessen %}<br>Oefen het in <a href="/les/{{ h.lessen[0].id }}">{{ h.lessen[0].meta.titel }}</a>.{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% for niveau, modules, klaar, totaal in niveaus %}
+<section class="niveau" id="niveau-{{ niveau.id }}">
+  <header class="niveau-kop">
+    <span class="niveau-nummer">{{ romeins[loop.index0] }}</span>
+    <div>
+      <h2>{{ niveau.naam }}</h2>
+      <p class="ondertitel">{{ niveau.ondertitel }}</p>
+    </div>
+  </header>
+  {% if totaal %}
+  <div class="voortgang" role="progressbar" aria-valuemin="0" aria-valuemax="{{ totaal }}" aria-valuenow="{{ klaar }}" aria-label="Voortgang {{ niveau.naam }}">
+    <span style="width: {{ (100 * klaar / totaal) | round(0) }}%"></span>
+  </div>
+  <p class="meta">{{ klaar }} van {{ totaal }} lessen af</p>
+  {% endif %}
+  <p class="niveau-uitleg">{{ niveau.uitleg }}</p>
+
+  {% for module, mstatus, lessen in modules %}
+  <article class="module status-{{ mstatus }}" id="module-{{ module.id }}">
+    <header class="module-kop">
+      <h3>{{ module.titel }}</h3>
+      <span class="badge badge-{{ mstatus }}">{{ {'op_slot': 'op slot', 'open': 'open', 'bezig': 'bezig', 'af': 'af', 'beheerst': 'beheerst', 'binnenkort': 'binnenkort'}[mstatus] }}</span>
+    </header>
+    <p class="module-uitleg">{{ module.uitleg }}</p>
+
+    {% if lessen %}
+    <ol class="lessen">
+      {% for les, status in lessen %}
+      <li class="les-rij status-{{ status }}">
+        {% if status == Status.op_slot %}
+        <span class="les-link" aria-disabled="true">
+          <span class="les-icoon" aria-hidden="true">{% include "partials/slot.svg" %}</span>
+          <span><span class="les-titel">{{ les.meta.titel }}</span><span class="meta">{{ les.meta.duur | duur }}</span></span>
+        </span>
+        {% else %}
+        <a class="les-link" href="/les/{{ les.id }}">
+          <span class="les-icoon" aria-hidden="true">{% if status == Status.af %}✓{% else %}{{ les.meta.volgorde }}{% endif %}</span>
+          <span><span class="les-titel">{{ les.meta.titel }}</span><span class="meta">{{ les.meta.duur | duur }}{% if les.meta.recept %} · {{ les.meta.recept.naam }}{% endif %}</span></span>
+        </a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+
+    {% if mstatus == Status.beheerst %}
+    <form method="post" action="/module/{{ module.id }}/intrekken" class="inline">
+      <button class="knop-link" type="submit">Toch niet beheerst? Zet terug</button>
+    </form>
+    {% elif module.zelftoets and mstatus not in [Status.af, Status.binnenkort] %}
+    <details class="zelftoets">
+      <summary>Kan ik dit al? Sla de module over</summary>
+      <form method="post" action="/module/{{ module.id }}/beheerst">
+        <p>Vink alleen aan wat je echt zonder nadenken kunt. Je kunt de lessen daarna nog steeds doen.</p>
+        {% for uitspraak in module.zelftoets %}
+        <label class="vink"><input type="checkbox" name="uitspraak" value="{{ loop.index }}"><span>{{ uitspraak }}</span></label>
+        {% endfor %}
+        <button class="knop" type="submit">Markeer als beheerst</button>
+      </form>
+    </details>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<form method="post" action="/uitloggen" class="uitloggen">
+  <button class="knop-link" type="submit">Uitloggen</button>
+</form>
+{% endblock %}

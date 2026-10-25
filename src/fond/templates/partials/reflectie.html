@@ -1,0 +1,13 @@
+<article class="kaart reflectie-item">
+  <header>
+    <span class="cijfer-groot" aria-label="Cijfer {{ r.cijfer }}">{{ r.cijfer }}</span>
+    <div>
+      {% if toon_les is defined and toon_les %}<h3>{% if l %}<a href="/les/{{ l.id }}">{{ l.meta.titel }}</a>{% else %}{{ r.les_id }}{% endif %}</h3>{% endif %}
+      <p class="meta">{{ r.gekookt_op | datum(true) }} · {{ r.porties }} {{ 'portie' if r.porties == 1 else 'porties' }}</p>
+    </div>
+  </header>
+  {% if r.foto %}<img class="reflectie-foto" src="/foto/{{ r.foto }}" alt="Foto van het gerecht" loading="lazy">{% endif %}
+  {% if r.wat_lukte %}<p><strong>Lukte:</strong> {{ r.wat_lukte }}</p>{% endif %}
+  {% if r.wat_niet %}<p><strong>Lukte niet:</strong> {{ r.wat_niet }}</p>{% endif %}
+  {% if r.volgende_keer %}<p><strong>Volgende keer:</strong> {{ r.volgende_keer }}</p>{% endif %}
+</article>

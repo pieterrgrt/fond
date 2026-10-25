@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titel %}{{ titel }}{% endblock %}
+{% block inhoud %}
+<section class="kaart">
+  <p class="label">{{ code }}</p>
+  <h1 class="kaart-titel">{{ titel }}</h1>
+  <p>{{ uitleg }}</p>
+  <a class="knop" href="/">Naar het overzicht</a>
+</section>
+{% endblock %}

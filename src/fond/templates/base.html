@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block titel %}Fond{% endblock %} · Fond</title>
+  <meta name="description" content="Fond, een persoonlijke kookcursus.">
+  <meta name="theme-color" content="#f5eee1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16120e" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="{{ static_url('icons/icon.svg') }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ static_url('icons/apple-touch-icon.png') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Fond">
+  <link rel="preload" href="/static/fonts/fraunces-opsz.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/static/fonts/atkinson-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ static_url('css/fond.css') }}">
+  <script>
+    // Thema vóór het tekenen zetten, zodat de pagina niet eerst licht opflitst.
+    try { const t = localStorage.getItem("fond-thema"); if (t) document.documentElement.dataset.thema = t; } catch (e) {}
+  </script>
+  <script src="{{ static_url('js/htmx.min.js') }}" defer></script>
+  <script src="{{ static_url('js/app.js') }}" defer></script>
+  {% block kop %}{% endblock %}
+</head>
+<body class="{% block body_klasse %}{% endblock %}" hx-boost="false">
+  {% block body %}
+  <a class="overslaan" href="#inhoud">Naar de inhoud</a>
+  <header class="kopbalk">
+    <a class="merk" href="/" aria-label="Fond, naar het overzicht">Fond</a>
+    <span class="offline-label" hidden>offline</span>
+    <button class="thema-knop" type="button" aria-label="Wissel licht en donker" data-thema-knop>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+    </button>
+  </header>
+  <main id="inhoud" class="pagina">
+    {% block inhoud %}{% endblock %}
+  </main>
+  <nav class="tabbalk" aria-label="Hoofdmenu">
+    {% set pad = request.url.path %}
+    <a href="/" {% if pad == '/' or pad.startswith('/les') %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM13 4h5.5c.8 0 1.5.7 1.5 1.5v13c0 .8-.7 1.5-1.5 1.5H13z"/></svg>
+      <span>Cursus</span></a>
+    <a href="/boodschappen" {% if pad.startswith('/boodschappen') %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h2l2.2 10.2a1 1 0 0 0 1 .8H18a1 1 0 0 0 1-.8L20.5 8H6.2M9 20a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01"/></svg>
+      <span>Lijst</span></a>
+    <a href="/logboek" {% if pad.startswith('/logboek') %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h11a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6zM6 3v18M9.5 8h5M9.5 12h5"/></svg>
+      <span>Logboek</span></a>
+    <a href="/woordenlijst" {% if pad.startswith('/woordenlijst') %}aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 10 5h1l5 14M7 14h7M17 9.5c1-1.3 4-1.3 4 1V19M17.2 15.5c0-2 3.8-2.2 3.8-.3"/></svg>
+      <span>Termen</span></a>
+  </nav>
+  {% endblock %}
+</body>
+</html>

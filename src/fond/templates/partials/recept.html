@@ -1,0 +1,72 @@
+{% set recept = les.meta.recept %}
+<div id="recept-inhoud" class="recept">
+  <h3 class="recept-naam">{{ recept.naam }}</h3>
+  <p class="meta">
+    {{ recept.tijd_actief | duur }} actief · {{ recept.tijd_totaal | duur }} totaal
+    {% if recept.eiwit_per_portie %} · ± {{ recept.eiwit_per_portie }} g eiwit per portie{% endif %}
+  </p>
+
+  <div class="porties" role="group" aria-label="Aantal porties">
+    <span class="label">Porties</span>
+    {% for p in portie_keuzes %}
+    <a class="portie{% if p == porties %} gekozen{% endif %}" href="/les/{{ les.id }}?porties={{ p }}#recept"
+       hx-get="/les/{{ les.id }}?porties={{ p }}" hx-target="#recept-inhoud" hx-select="#recept-inhoud" hx-swap="outerHTML" hx-push-url="true"
+       {% if p == porties %}aria-current="true"{% endif %}>{{ p }}{% if p == recept.porties %}<small>basis</small>{% endif %}</a>
+    {% endfor %}
+  </div>
+
+  {% for groep, regels in ingredient_groepen.items() %}
+  {% if groep %}<h4 class="ingredient-groep">{{ groep }}</h4>{% endif %}
+  <ul class="ingredienten">
+    {% for r in regels %}
+    <li>
+      <span class="hoeveelheid">{{ r.tekst if r.hoeveelheid is not none else '' }}</span>
+      <span class="ingredient">{{ r.ingredient.naam }}{% if r.hoeveelheid is none %} <span class="meta">naar smaak</span>{% endif %}
+        {% if r.bron.notitie %}<span class="notitie">, {{ r.bron.notitie }}</span>{% endif %}
+        <span class="duits" lang="de">{{ r.ingredient.naam_de }}</span></span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+
+  <div class="knoppen">
+    <a class="knop knop-hoofd" href="/les/{{ les.id }}/koken?porties={{ porties }}">Start kookmodus</a>
+    <a class="knop" href="/les/{{ les.id }}/boodschappen?porties={{ porties }}">Boodschappenlijst</a>
+  </div>
+  <form method="post" action="/boodschappen/toevoegen" class="inline">
+    <input type="hidden" name="les_id" value="{{ les.id }}">
+    <input type="hidden" name="porties" value="{{ porties }}">
+    <input type="hidden" name="terug" value="/les/{{ les.id }}?porties={{ porties }}#recept">
+    <button class="knop-link" type="submit">
+      {% if op_lijst %}{% if op_lijst.porties == porties %}✓ Op je weeklijst ({{ porties }} porties){% else %}Weeklijst bijwerken naar {{ porties }} porties (nu {{ op_lijst.porties }}){% endif %}{% else %}+ Zet op mijn weeklijst{% endif %}
+    </button>
+  </form>
+
+  <h4 class="ingredient-groep">Werkwijze</h4>
+  <ol class="stappen">
+    {% for stap in recept.stappen %}
+    <li>{{ stap.tekst }}{% if stap.timer %} <span class="timer-badge">⏱ {{ stap.timer_label or 'timer' }} · {{ stap.timer_seconden | tijd }}</span>{% endif %}</li>
+    {% endfor %}
+  </ol>
+
+  {% if recept.meal_prep %}
+  {% set mp = recept.meal_prep %}
+  <aside class="kaart mealprep">
+    <p class="label">Meal prep</p>
+    <dl>
+      <dt>Koelkast</dt><dd>{{ mp.koelkast_dagen }} dagen</dd>
+      <dt>Vriezer</dt><dd>{% if mp.vriezer_maanden %}tot {{ mp.vriezer_maanden }} maanden{% else %}niet geschikt{% endif %}</dd>
+      <dt>Opwarmen</dt><dd>{{ mp.opwarmen }}</dd>
+      {% if mp.variatie %}<dt>Variëren</dt><dd>{{ mp.variatie }}</dd>{% endif %}
+      {% if mp.tip %}<dt>Tip</dt><dd>{{ mp.tip }}</dd>{% endif %}
+    </dl>
+  </aside>
+  {% endif %}
+
+  {% if recept.wijn %}
+  <aside class="kaart aan-tafel">
+    <p class="label">Aan tafel · wijn &amp; kaas</p>
+    <p>{{ recept.wijn }}</p>
+  </aside>
+  {% endif %}
+</div>

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block titel %}{{ les.meta.titel }}{% endblock %}
+{% block inhoud %}
+{% set vaste = ['theorie', 'techniek', 'opdracht', 'proeven'] %}
+<nav class="kruimels" aria-label="Kruimelpad">
+  <a href="/#niveau-{{ niveau.id }}">{{ niveau.naam }}</a> <span aria-hidden="true">·</span>
+  <a href="/#module-{{ module.id }}">{{ module.titel }}</a> <span aria-hidden="true">·</span>
+  <span>les {{ les.meta.volgorde }}</span>
+</nav>
+
+<header class="les-kop">
+  <h1>{{ les.meta.titel }}</h1>
+  <p class="inleiding">{{ les.meta.samenvatting }}</p>
+  <p class="meta">
+    {{ les.meta.duur | duur }}
+    {% if status == Status.af %} · <span class="badge badge-af">af</span>{% endif %}
+  </p>
+</header>
+
+{% if afgerond %}
+<section class="kaart melding-af" role="status">
+  <p class="label">Proeven vastgelegd</p>
+  <p><strong>Deze les is af.</strong> Goed gedaan.</p>
+  {% if daarna and daarna.id != les.id %}<a class="knop knop-hoofd" href="/les/{{ daarna.id }}">Volgende: {{ daarna.meta.titel }}</a>{% endif %}
+</section>
+{% endif %}
+
+{% if status == Status.op_slot %}
+<section class="kaart op-slot" role="note">
+  <p class="label">Op slot</p>
+  <p>Je kunt deze les alvast lezen, maar nog niet afronden.</p>
+  <ul>{% for reden in ontbrekend %}<li>{{ reden }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<nav class="sectienav" aria-label="Onderdelen van de les">
+  <a href="#theorie">Theorie</a><a href="#techniek">Techniek</a>{% if les.meta.recept %}<a href="#recept">Recept</a>{% endif %}<a href="#opdracht">Opdracht</a><a href="#proeven">Proeven</a>
+</nav>
+
+{% if herhaalt %}
+<p class="herhaalt">Herhaling:
+  {% for techniek, bron in herhaalt %}<a class="chip" href="/les/{{ bron.id }}" title="Aangeleerd in {{ bron.meta.titel }}">{{ techniek.frans or techniek.naam }}</a>{% endfor %}
+</p>
+{% endif %}
+
+{% set theorie = les.sectie('Theorie') %}
+<section id="theorie" class="les-sectie prose">
+  <h2><span class="sectie-nummer">I</span> Theorie</h2>
+  {{ theorie.html | safe }}
+</section>
+
+<section id="techniek" class="les-sectie prose">
+  <h2><span class="sectie-nummer">II</span> Techniek</h2>
+  {% if technieken %}<p class="chips">{% for t in technieken %}<a class="chip" href="/woordenlijst#{{ t.id }}">{{ t.frans or t.naam }}</a>{% endfor %}</p>{% endif %}
+  {{ les.sectie('Techniek').html | safe }}
+  {% for sectie in les.secties if sectie.titel.lower() not in vaste %}
+  <h3>{{ sectie.titel }}</h3>
+  {{ sectie.html | safe }}
+  {% endfor %}
+</section>
+
+{% if les.meta.recept %}
+<section id="recept" class="les-sectie">
+  <h2><span class="sectie-nummer">III</span> Recept</h2>
+  {% include "partials/recept.html" %}
+</section>
+{% endif %}
+
+<section id="opdracht" class="les-sectie">
+  <h2><span class="sectie-nummer">IV</span> Opdracht</h2>
+  {% if les.sectie('Opdracht') %}<div class="prose">{{ les.sectie('Opdracht').html | safe }}</div>{% endif %}
+  <ul class="checklist">
+    {% for punt, tekst, aan in opdracht %}
+    {% include "partials/vinkje.html" %}
+    {% endfor %}
+  </ul>
+</section>
+
+<section id="proeven" class="les-sectie">
+  <h2><span class="sectie-nummer">V</span> Proeven</h2>
+  {% if les.sectie('Proeven') %}<div class="prose">{{ les.sectie('Proeven').html | safe }}</div>{% endif %}
+
+  {% if status != Status.op_slot %}
+  <form class="kaart reflectie" method="post" action="/les/{{ les.id }}/reflectie" enctype="multipart/form-data" data-concept="reflectie-{{ les.id }}">
+    <h3>{% if reflecties %}Nog een keer gekookt?{% else %}Hoe ging het?{% endif %}</h3>
+    <div class="rij">
+      <label>Gekookt op <input type="date" name="gekookt_op" value="{{ vandaag.isoformat() }}" required></label>
+      <label>Porties <input type="number" name="porties" min="1" max="12" value="{{ porties }}" inputmode="numeric"></label>
+    </div>
+    <fieldset class="cijfer">
+      <legend>Cijfer</legend>
+      <div class="cijfer-keuze">
+        {% for n in range(1, 11) %}
+        <label><input type="radio" name="cijfer" value="{{ n }}" required {% if n == 7 %}checked{% endif %}><span>{{ n }}</span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <label>Wat lukte?<textarea name="wat_lukte" rows="3" placeholder="De ui was gelijkmatig, de chili had diepte…"></textarea></label>
+    <label>Wat lukte niet?<textarea name="wat_niet" rows="3" placeholder="De knoflook verbrandde, te weinig zout…"></textarea></label>
+    <label>Volgende keer anders<textarea name="volgende_keer" rows="2" placeholder="Pan langer voorverwarmen…"></textarea></label>
+    <label class="foto-kiezer">Foto (optioneel)<input type="file" name="foto" accept="image/*"></label>
+    <p class="offline-uitleg" hidden>Je bent offline. Je tekst blijft bewaard op dit toestel; verstuur hem als je weer verbinding hebt.</p>
+    <button class="knop knop-hoofd" type="submit">Proeven vastleggen</button>
+  </form>
+  {% endif %}
+
+  {% if reflecties %}
+  <h3 class="tussenkop">Eerder gekookt</h3>
+  {% for r in reflecties %}{% include "partials/reflectie.html" %}{% endfor %}
+  {% endif %}
+</section>
+
+<nav class="vorige-volgende" aria-label="Andere lessen">
+  {% if vorige %}<a href="/les/{{ vorige.id }}"><span class="meta">Vorige</span>{{ vorige.meta.titel }}</a>{% else %}<span></span>{% endif %}
+  {% if volgende %}<a class="rechts" href="/les/{{ volgende.id }}"><span class="meta">Volgende</span>{{ volgende.meta.titel }}</a>{% endif %}
+</nav>
+{% endblock %}
