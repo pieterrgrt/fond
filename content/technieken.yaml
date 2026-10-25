@@ -33,6 +33,10 @@ hacher:
 mes-aanzetten:
   naam: Het mes aanzetten
   uitleg: Met een aanzetstaal de snede rechtzetten (wekelijks). Slijpen op een steen haalt staal weg (een paar keer per jaar).
+mirepoix:
+  naam: Mirepoix
+  frans: mirepoix
+  uitleg: Ui, wortel en bleekselderij (2:1:1) in blokjes, zacht gestoofd. De smaakbasis van soepen, sauzen en stoofpotten.
 afkoelen:
   naam: Snel afkoelen
   uitleg: "Gekookt eten binnen 2 uur onder 10 °C: in ondiepe bakken verdelen en niet afgedekt laten staan."
