@@ -1,0 +1,121 @@
+# De opbouw van de cursus: de keukenbrigade als leerpad.
+# Een module gaat open als de modules in `vereist` af of beheerst zijn.
+# Met de `zelftoets` kun je een module overslaan als je de basis al kunt.
+niveaus:
+  - id: commis
+    naam: Commis
+    ondertitel: De basis onder de knie
+    uitleg: >
+      De commis is de jongste kok in de brigade. Je leert je werkplek inrichten,
+      snijden, warmte beheersen en op smaak brengen. Elk gerecht is meteen
+      geschikt voor meal prep.
+    modules:
+      - id: werkplek
+        titel: De werkplek
+        uitleg: Mise en place, het mes en veilig bewaren. Alles wat vóór het koken komt.
+        zelftoets:
+          - Ik lees een recept helemaal en zet alles klaar voordat ik het vuur aanzet.
+          - Ik snijd een ui snel in gelijke blokjes met de klauwgreep.
+          - Ik weet hoe snel gekookt eten moet afkoelen en hoe lang het in de koelkast kan.
+      - id: warmte
+        titel: Warmte begrijpen
+        uitleg: Bakken, sudderen en roosteren. Wat warmte met eten doet, en hoe je je fornuis leert kennen.
+        vereist: [werkplek]
+        zelftoets:
+          - Ik bak vlees of groente bruin zonder dat het gaat koken in eigen vocht.
+          - Ik weet het verschil tussen koken en sudderen en houd een pan op een zacht pruttelvuur.
+          - Ik rooster groente in de oven krokant in plaats van slap.
+      - id: smaak
+        titel: Op smaak brengen
+        uitleg: Zout, zuur, vet en warmte. Proeven, bijsturen, en kruiden en specerijen leren herkennen.
+        vereist: [werkplek]
+        zelftoets:
+          - Ik proef tijdens het koken en weet of een gerecht zout, zuur of vet mist.
+          - Ik rooster specerijen in vet om hun smaak los te maken.
+      - id: zetmeel
+        titel: Rijst, pasta en aardappels
+        uitleg: De basis onder bijna elke maaltijd, en onder elke meal-prepbak.
+        vereist: [warmte]
+        zelftoets:
+          - Mijn rijst is los en niet papperig, en ik weet hoe ik hem veilig bewaar.
+          - Ik gebruik pastawater om een saus te binden.
+          - Ik weet welke aardappel (festkochend of mehligkochend) ik waarvoor gebruik.
+      - id: eieren
+        titel: Eieren
+        uitleg: Goedkoop, eiwitrijk en de beste oefening in warmtebeheersing.
+        vereist: [warmte]
+        zelftoets:
+          - Ik kook een ei op de minuut zoals ik het wil.
+          - Ik maak romig roerei op laag vuur.
+
+  - id: chef-de-partie
+    naam: Chef de partie
+    ondertitel: Een eigen station
+    uitleg: >
+      De chef de partie runt een eigen station: sauzen, vis, groente. Je leert de
+      bouwstenen waar de klassieke keuken op rust.
+    modules:
+      - id: fonds
+        titel: Fonds en bouillons
+        uitleg: De basis waar Fond naar heet. Trek je eigen bouillon en weet wanneer een blokje volstaat.
+        vereist: [smaak, zetmeel]
+      - id: sauzen
+        titel: Basissauzen
+        uitleg: Roux, béchamel, velouté, emulsies en pansauzen. Binden zonder angst.
+        vereist: [fonds]
+      - id: peulvruchten
+        titel: Peulvruchten
+        uitleg: Linzen, bonen en kikkererwten. Goedkoop eiwit dat goed te bewaren is.
+        vereist: [smaak, zetmeel]
+      - id: groente
+        titel: Groente echt lekker maken
+        uitleg: Van plicht naar hoofdrol. Glaceren, grillen, blancheren en contrast.
+        vereist: [warmte, smaak]
+      - id: eiwitten
+        titel: Eiwitten
+        uitleg: Kip, vis en tofu. Garing, rusten en sappig houden, ook na opwarmen.
+        vereist: [warmte, smaak]
+
+  - id: sous-chef
+    naam: Sous-chef
+    ondertitel: Systemen en variatie
+    uitleg: >
+      De sous-chef denkt in systemen. Meal prep wordt een routine: één basis, drie
+      gerechten, en lunch zonder brood.
+    modules:
+      - id: meal-prep-systeem
+        titel: Meal prep als systeem
+        uitleg: Eén basis, drie gerechten. Plannen, koken in batches en variëren.
+        vereist: [peulvruchten, eiwitten]
+      - id: lunch
+        titel: Lunch zonder brood
+        uitleg: Bowls, salades, soepen en wraps die een ochtend in je tas overleven.
+        vereist: [peulvruchten]
+      - id: restjes
+        titel: Restjes verwerken
+        uitleg: Niets weggooien. Van overschot naar nieuw gerecht.
+        vereist: [meal-prep-systeem]
+      - id: smaakprofielen
+        titel: Smaakprofielen
+        uitleg: Frans, Italiaans, Levantijns, Indiaas, Oost-Aziatisch, Mexicaans. Wat maakt een keuken herkenbaar?
+        vereist: [sauzen, groente]
+
+  - id: chef
+    naam: Chef
+    ondertitel: Zonder recept
+    uitleg: >
+      De chef kookt vanuit wat er is. Je stelt zelf een weekmenu samen, kookt
+      zonder recept en zet een maaltijd voor anderen op tafel.
+    modules:
+      - id: zonder-recept
+        titel: Koken zonder recept
+        uitleg: Van wat er in huis en bij de Aldi ligt naar een gerecht.
+        vereist: [smaakprofielen, restjes]
+      - id: weekmenu
+        titel: Een weekmenu samenstellen
+        uitleg: Budget, variatie, eiwit en één kookmiddag.
+        vereist: [meal-prep-systeem, lunch]
+      - id: voor-anderen
+        titel: Voor anderen koken
+        uitleg: Timing, gangen en rust in de keuken als er gasten komen.
+        vereist: [zonder-recept]

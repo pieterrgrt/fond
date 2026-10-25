@@ -1,0 +1,351 @@
+# Ingrediënten zoals je ze bij de Aldi Süd vindt.
+#   naam_de    : waar je op zoekt in de winkel
+#   afdeling   : id uit winkel.yaml (bepaalt de volgorde op de lijst)
+#   verpakking : gangbare verpakking; `prijs` is een indicatieve schatting in euro.
+#                De eenheid is dezelfde als in de recepten, zodat de lijst kan
+#                uitrekenen hoeveel verpakkingen je nodig hebt.
+#   voorraad   : basisvoorraad; komt op de lijst onder "check thuis"
+#   heel       : altijd hele stuks (bij schalen naar boven afgerond)
+
+# --- Groente & fruit ---
+ui:
+  naam: Ui
+  naam_de: Zwiebeln
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.29}
+rode-ui:
+  naam: Rode ui
+  naam_de: Rote Zwiebeln
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 5, eenheid: stuk, prijs: 0.99}
+knoflook:
+  naam: Knoflook
+  naam_de: Knoblauch
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 30, eenheid: teen, prijs: 1.19}
+gember:
+  naam: Verse gember
+  naam_de: Ingwer
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 150, eenheid: g, prijs: 0.89}
+paprika:
+  naam: Rode paprika
+  naam_de: Paprika rot
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 3, eenheid: stuk, prijs: 2.29}
+wortel:
+  naam: Wortel
+  naam_de: Karotten
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 1.19}
+bleekselderij:
+  naam: Bleekselderij
+  naam_de: Staudensellerie
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 8, eenheid: stuk, prijs: 1.49}
+komkommer:
+  naam: Komkommer
+  naam_de: Salatgurke
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 1, eenheid: stuk, prijs: 0.79}
+cherrytomaten:
+  naam: Cherrytomaten
+  naam_de: Cherry-Romatomaten
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 250, eenheid: g, prijs: 1.49}
+peterselie:
+  naam: Platte peterselie
+  naam_de: Petersilie glatt (Bund)
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 1, eenheid: bos, prijs: 0.99}
+citroen:
+  naam: Citroen
+  naam_de: Zitronen
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49}
+limoen:
+  naam: Limoen
+  naam_de: Limetten
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 4, eenheid: stuk, prijs: 1.49}
+lente-ui:
+  naam: Lente-ui
+  naam_de: Frühlingszwiebeln
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 1, eenheid: bos, prijs: 0.79}
+zoete-aardappel:
+  naam: Zoete aardappel
+  naam_de: Süßkartoffeln
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 1000, eenheid: g, prijs: 2.49}
+broccoli:
+  naam: Broccoli
+  naam_de: Brokkoli
+  afdeling: groente-fruit
+  heel: true
+  verpakking: {hoeveelheid: 1, eenheid: stuk, prijs: 1.49}
+babyspinazie:
+  naam: Babyspinazie
+  naam_de: Babyspinat
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 200, eenheid: g, prijs: 1.79}
+aardappel:
+  naam: Vastkokende aardappels
+  naam_de: Speisekartoffeln festkochend
+  afdeling: groente-fruit
+  verpakking: {hoeveelheid: 2000, eenheid: g, prijs: 2.99}
+
+# --- Pasta, rijst & peulvruchten ---
+basmati:
+  naam: Basmatirijst
+  naam_de: Basmati Reis
+  afdeling: droog
+  verpakking: {hoeveelheid: 1000, eenheid: g, prijs: 2.49}
+spaghetti:
+  naam: Spaghetti
+  naam_de: Spaghetti
+  afdeling: droog
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 0.89}
+rode-linzen:
+  naam: Rode linzen
+  naam_de: Rote Linsen
+  afdeling: droog
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 1.69}
+
+# --- Conserven & sauzen ---
+kidneybonen:
+  naam: Kidneybonen (blik)
+  naam_de: Kidneybohnen
+  afdeling: conserven
+  verpakking: {hoeveelheid: 1, eenheid: blik, prijs: 0.79}
+kikkererwten:
+  naam: Kikkererwten (blik)
+  naam_de: Kichererbsen
+  afdeling: conserven
+  verpakking: {hoeveelheid: 1, eenheid: blik, prijs: 0.79}
+witte-bonen:
+  naam: Witte bonen (blik)
+  naam_de: Weiße Riesenbohnen
+  afdeling: conserven
+  verpakking: {hoeveelheid: 1, eenheid: blik, prijs: 0.89}
+tomatenblokjes:
+  naam: Tomatenblokjes (blik)
+  naam_de: Gehackte Tomaten
+  afdeling: conserven
+  verpakking: {hoeveelheid: 1, eenheid: blik, prijs: 0.69}
+passata:
+  naam: Passata
+  naam_de: Passierte Tomaten
+  afdeling: conserven
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 0.79}
+tomatenpuree:
+  naam: Tomatenpuree
+  naam_de: Tomatenmark
+  afdeling: conserven
+  voorraad: true
+  verpakking: {hoeveelheid: 13, eenheid: el, prijs: 0.89}
+olijven:
+  naam: Zwarte olijven
+  naam_de: Kalamata Oliven
+  afdeling: conserven
+  verpakking: {hoeveelheid: 150, eenheid: g, prijs: 1.69}
+kappertjes:
+  naam: Kappertjes
+  naam_de: Kapern
+  afdeling: conserven
+  voorraad: true
+  verpakking: {hoeveelheid: 1, eenheid: pot, prijs: 1.29}
+tonijn:
+  naam: Tonijn in eigen nat (blik)
+  naam_de: Thunfisch im eigenen Saft
+  afdeling: conserven
+  verpakking: {hoeveelheid: 1, eenheid: blik, prijs: 1.39}
+sojasaus:
+  naam: Sojasaus
+  naam_de: Sojasauce
+  afdeling: conserven
+  voorraad: true
+
+# --- Specerijen, olie & azijn (basisvoorraad) ---
+zout:
+  naam: Zout
+  naam_de: Speisesalz
+  afdeling: kruiden
+  voorraad: true
+peper:
+  naam: Zwarte peper
+  naam_de: Pfeffer schwarz (Mühle)
+  afdeling: kruiden
+  voorraad: true
+raapzaadolie:
+  naam: Raapzaadolie (neutraal, om te bakken)
+  naam_de: Rapsöl
+  afdeling: kruiden
+  voorraad: true
+olijfolie:
+  naam: Olijfolie extra vierge
+  naam_de: Natives Olivenöl extra
+  afdeling: kruiden
+  voorraad: true
+lijnzaadolie:
+  naam: Lijnzaadolie
+  naam_de: Leinöl
+  afdeling: kruiden
+  voorraad: true
+sesamolie:
+  naam: Geroosterde sesamolie
+  naam_de: Sesamöl
+  afdeling: kruiden
+  voorraad: true
+rode-wijnazijn:
+  naam: Rodewijnazijn
+  naam_de: Rotweinessig
+  afdeling: kruiden
+  voorraad: true
+mosterd:
+  naam: Mosterd
+  naam_de: Senf mittelscharf
+  afdeling: kruiden
+  voorraad: true
+bouillonpoeder:
+  naam: Groentebouillon (poeder)
+  naam_de: Gemüsebrühe instant
+  afdeling: kruiden
+  voorraad: true
+komijn:
+  naam: Komijn, gemalen
+  naam_de: Kreuzkümmel gemahlen
+  afdeling: kruiden
+  voorraad: true
+paprikapoeder:
+  naam: Paprikapoeder (zoet)
+  naam_de: Paprika edelsüß
+  afdeling: kruiden
+  voorraad: true
+chilivlokken:
+  naam: Chilivlokken
+  naam_de: Chili geschrotet
+  afdeling: kruiden
+  voorraad: true
+oregano:
+  naam: Oregano, gedroogd
+  naam_de: Oregano gerebelt
+  afdeling: kruiden
+  voorraad: true
+kerriepoeder:
+  naam: Kerriepoeder
+  naam_de: Currypulver
+  afdeling: kruiden
+  voorraad: true
+kurkuma:
+  naam: Kurkuma
+  naam_de: Kurkuma gemahlen
+  afdeling: kruiden
+  voorraad: true
+laurier:
+  naam: Laurierblad
+  naam_de: Lorbeerblätter
+  afdeling: kruiden
+  voorraad: true
+
+# --- Ontbijt & bakken ---
+cacao:
+  naam: Cacaopoeder
+  naam_de: Backkakao
+  afdeling: ontbijt
+  voorraad: true
+suiker:
+  naam: Suiker
+  naam_de: Zucker
+  afdeling: ontbijt
+  voorraad: true
+
+# --- Zuivel & eieren ---
+griekse-yoghurt:
+  naam: Griekse yoghurt
+  naam_de: Joghurt nach griechischer Art
+  afdeling: zuivel
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 1.79}
+kwark:
+  naam: Magere kwark
+  naam_de: Speisequark Magerstufe
+  afdeling: zuivel
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 1.29}
+melk:
+  naam: Volle melk
+  naam_de: Frische Vollmilch
+  afdeling: zuivel
+  verpakking: {hoeveelheid: 1000, eenheid: ml, prijs: 1.15}
+eieren:
+  naam: Eieren
+  naam_de: Eier aus Freilandhaltung
+  afdeling: zuivel
+  heel: true
+  verpakking: {hoeveelheid: 10, eenheid: stuk, prijs: 2.79}
+
+# --- Kaas ---
+feta:
+  naam: Feta
+  naam_de: Feta
+  afdeling: kaas
+  verpakking: {hoeveelheid: 200, eenheid: g, prijs: 1.99}
+halloumi:
+  naam: Halloumi
+  naam_de: Halloumi
+  afdeling: kaas
+  verpakking: {hoeveelheid: 225, eenheid: g, prijs: 2.79}
+grana-padano:
+  naam: Grana Padano
+  naam_de: Grana Padano am Stück
+  afdeling: kaas
+  verpakking: {hoeveelheid: 200, eenheid: g, prijs: 3.29}
+
+# --- Vlees, vis & tofu ---
+rundergehakt:
+  naam: Rundergehakt
+  naam_de: Rinderhackfleisch
+  afdeling: vlees-vis
+  verpakking: {hoeveelheid: 500, eenheid: g, prijs: 5.49}
+kipfilet:
+  naam: Kipfilet
+  naam_de: Hähnchenbrustfilet
+  afdeling: vlees-vis
+  verpakking: {hoeveelheid: 600, eenheid: g, prijs: 6.49}
+gerookte-tofu:
+  naam: Gerookte tofu
+  naam_de: Räuchertofu
+  afdeling: vlees-vis
+  verpakking: {hoeveelheid: 200, eenheid: g, prijs: 1.99}
+
+# --- Diepvries ---
+diepvries-erwten:
+  naam: Doperwten (diepvries)
+  naam_de: Junge Erbsen (TK)
+  afdeling: diepvries
+  verpakking: {hoeveelheid: 750, eenheid: g, prijs: 1.49}
+diepvries-kruiden:
+  naam: Kruidenmix (diepvries)
+  naam_de: 8-Kräuter (TK)
+  afdeling: diepvries
+  verpakking: {hoeveelheid: 10, eenheid: el, prijs: 0.99}
+diepvries-spinazie:
+  naam: Bladspinazie (diepvries)
+  naam_de: Blattspinat (TK)
+  afdeling: diepvries
+  verpakking: {hoeveelheid: 450, eenheid: g, prijs: 1.29}
+
+# --- Wijn & dranken ---
+rode-wijn:
+  naam: Droge rode wijn
+  naam_de: Rotwein trocken (bv. Montepulciano d'Abruzzo)
+  afdeling: dranken
+  verpakking: {hoeveelheid: 750, eenheid: ml, prijs: 3.49}

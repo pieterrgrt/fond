@@ -1,0 +1,106 @@
+# Technieken en keukentermen. Een les leert een techniek aan (`technieken`) of
+# herhaalt hem (`herhaalt`). In lesteksten link je ernaar met [[id]].
+# Ze vormen ook de woordenlijst en (later) de Anki-kaartjes.
+
+mise-en-place:
+  naam: Mise en place
+  frans: mise en place
+  uitleg: "'Alles op zijn plek': vóór het koken alles wassen, snijden, afwegen en klaarzetten."
+schoon-werken:
+  naam: Schoon werken
+  uitleg: Opruimen terwijl je kookt. Een lege, droge plank en een afvalbak binnen handbereik.
+recept-lezen:
+  naam: Een recept lezen
+  uitleg: Het hele recept twee keer lezen, wachttijden en gelijktijdige stappen opzoeken, en pas dan beginnen.
+klauwgreep:
+  naam: De klauwgreep
+  uitleg: Vingertoppen naar binnen gekruld, knokkels tegen het lemmet. Zo snijd je snel zonder in je vingers te snijden.
+koksmes:
+  naam: Het koksmes hanteren
+  uitleg: Pinch grip (duim en wijsvinger op het lemmet) en een wiegende beweging van punt naar hiel.
+brunoise:
+  naam: Brunoise
+  frans: brunoise
+  uitleg: Kleine, gelijke blokjes van 2–3 mm. Klassiek voor ui, wortel en selder.
+emincer:
+  naam: Émincer
+  frans: émincer
+  uitleg: In dunne plakjes of reepjes snijden, bv. ui in halve ringen.
+hacher:
+  naam: Hakken
+  frans: hacher
+  uitleg: Fijn hakken met een wiegend mes, bv. kruiden of knoflook.
+mes-aanzetten:
+  naam: Het mes aanzetten
+  uitleg: Met een aanzetstaal de snede rechtzetten (wekelijks). Slijpen op een steen haalt staal weg (een paar keer per jaar).
+afkoelen:
+  naam: Snel afkoelen
+  uitleg: "Gekookt eten binnen 2 uur onder 10 °C: in ondiepe bakken verdelen en niet afgedekt laten staan."
+bewaren:
+  naam: Bewaren in koelkast en vriezer
+  uitleg: Koelkast 2–4 °C, meeste gekookte gerechten 3 dagen; vriezer –18 °C, 2–3 maanden. Altijd labelen met datum.
+opwarmen:
+  naam: Veilig opwarmen
+  uitleg: Eén keer goed heet opwarmen (dampend, 75 °C in de kern) en niet opnieuw bewaren.
+maillard:
+  naam: De Maillardreactie
+  uitleg: Bruinkleuring van eiwit en suiker boven ±140 °C. Hier komt de smaak van korstjes vandaan. Vocht houdt dit tegen.
+voorverwarmen:
+  naam: Pan voorverwarmen
+  uitleg: Pan eerst heet laten worden, dan pas vet en ingrediënten. Op een keramische plaat duurt dit 3–4 minuten.
+sauteren:
+  naam: Sauteren
+  frans: sauter
+  uitleg: Snel bakken in weinig vet op hoog vuur, terwijl je de pan of de inhoud in beweging houdt.
+deglaceren:
+  naam: Deglaceren
+  frans: déglacer
+  uitleg: Aanbaksels losweken met een scheut vocht (water, wijn, bouillon). Dat bruine laagje heet de fond.
+sudderen:
+  naam: Sudderen
+  frans: mijoter
+  uitleg: Zacht laten pruttelen net onder de kook, met af en toe een belletje. Vlees wordt mals, smaken trekken in elkaar.
+blancheren:
+  naam: Blancheren
+  frans: blanchir
+  uitleg: Kort koken in gezouten water en meteen afkoelen in ijswater. Groente blijft kleurig en knapperig.
+roosteren:
+  naam: Roosteren
+  frans: rôtir
+  uitleg: Droge, hete lucht in de oven (200–220 °C). Ruimte op de bakplaat is de sleutel tot krokant.
+proeven:
+  naam: Proeven en bijsturen
+  frans: goûter
+  uitleg: Tijdens het koken steeds met een schone lepel proeven en per keer één ding bijsturen.
+zouten:
+  naam: Zouten
+  frans: assaisonner
+  uitleg: Vroeg en in lagen zouten. Zout versterkt smaak en tempert bitterheid.
+zuur:
+  naam: Zuur toevoegen
+  uitleg: Citroen of azijn aan het eind maakt een gerecht 'helder'. Een vlak gerecht mist vaak zuur, niet zout.
+specerijen-bloeien:
+  naam: Specerijen laten bloeien
+  uitleg: Gemalen specerijen 30–60 seconden in heet vet bakken. De smaakstoffen zijn vetoplosbaar en komen zo vrij.
+kruiden-herkennen:
+  naam: Kruiden herkennen
+  uitleg: Ruiken en proeven om kruiden en specerijen uit elkaar te houden. Verse kruiden aan het eind, gedroogde aan het begin.
+absorptiemethode:
+  naam: De absorptiemethode
+  uitleg: Rijst met precies genoeg water koken dat hij alles opneemt, deksel dicht, daarna laten rusten.
+al-dente:
+  naam: Al dente
+  uitleg: "'Op de tand': pasta gaar maar met een klein beetje weerstand in de kern."
+pastawater:
+  naam: Binden met pastawater
+  uitleg: Zetmeelrijk kookwater bindt vet en vocht tot een glanzende saus (een emulsie).
+aardappel-koken:
+  naam: Aardappels koken
+  uitleg: Koud water, zout, dan aan de kook. Zo garen ze gelijk van buiten naar binnen.
+ei-koken:
+  naam: Een ei koken
+  uitleg: In kokend water, op de minuut. 6 min zacht, 7 min jammy, 9 min hard; daarna koud water.
+roerei:
+  naam: Roerei
+  frans: œufs brouillés
+  uitleg: Op laag vuur roeren tot de eieren net stollen, van het vuur halen terwijl ze nog glanzen.

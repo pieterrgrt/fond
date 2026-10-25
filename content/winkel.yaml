@@ -1,0 +1,40 @@
+# De route door de Aldi Süd, in de volgorde waarin je loopt.
+# De boodschappenlijst wordt in deze volgorde gegroepeerd. Pas gerust aan
+# op jouw filiaal: alleen de volgorde en de namen tellen.
+afdelingen:
+  - id: groente-fruit
+    naam: Groente & fruit
+    naam_de: Obst & Gemüse
+  - id: brood
+    naam: Brood
+    naam_de: Backwaren
+  - id: droog
+    naam: Pasta, rijst & peulvruchten
+    naam_de: Nudeln, Reis & Hülsenfrüchte
+  - id: conserven
+    naam: Conserven & sauzen
+    naam_de: Konserven & Saucen
+  - id: kruiden
+    naam: Specerijen, olie & azijn
+    naam_de: Gewürze, Öl & Essig
+  - id: ontbijt
+    naam: Ontbijt & bakken
+    naam_de: Müsli, Mehl & Backzutaten
+  - id: zuivel
+    naam: Zuivel & eieren
+    naam_de: Molkerei & Eier
+  - id: kaas
+    naam: Kaas
+    naam_de: Käse
+  - id: vlees-vis
+    naam: Vlees, vis & tofu
+    naam_de: Fleisch, Fisch & Tofu
+  - id: diepvries
+    naam: Diepvries
+    naam_de: Tiefkühl
+  - id: dranken
+    naam: Wijn & dranken
+    naam_de: Wein & Getränke
+  - id: huishouden
+    naam: Huishouden & keuken
+    naam_de: Haushalt & Aktionsware
