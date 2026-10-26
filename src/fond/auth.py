@@ -1,41 +1,37 @@
-"""Inloggen voor één gebruiker.
+"""Ingelogd blijven, en wie er is ingelogd.
 
-Het wachtwoord staat alleen als Argon2-hash in de omgeving (FOND_PASSWORD_HASH).
-Na inloggen krijg je een ondertekende sessiecookie die lang geldig blijft, zodat de
-app op je telefoon niet steeds opnieuw vraagt. Mislukte pogingen worden beperkt,
-zodat niemand vanaf het open internet je wachtwoord kan raden.
+Na inloggen krijg je een ondertekende sessiecookie met je account-id, die lang
+geldig blijft, zodat de app op je telefoon niet steeds opnieuw vraagt. Mislukte
+pogingen worden beperkt, zodat niemand vanaf het open internet wachtwoorden kan
+raden. De wachtwoorden zelf staan in gebruikers.py.
 """
 
 import time
 from collections import deque
 from urllib.parse import quote
 
-from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Request
 from fastapi.responses import RedirectResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-# Paden die zonder inloggen werken: de loginpagina zelf, statische bestanden
+# Paden die zonder inloggen werken: inloggen en aanmelden, statische bestanden
 # (lettertypen, CSS), en wat de browser nodig heeft om de app te installeren.
 # /api/widget regelt zelf de toegang, met een vaste sleutel (zie routes.widget).
-OPENBAAR = {"/login", "/sw.js", "/manifest.webmanifest", "/gezond", "/offline", "/api/widget"}
+OPENBAAR = {
+    "/login",
+    "/aanmelden",
+    "/sw.js",
+    "/manifest.webmanifest",
+    "/gezond",
+    "/offline",
+    "/api/widget",
+}
 OPENBAAR_MAP = "/static/"
-
-_hasher = PasswordHasher()
-
-
-def controleer_wachtwoord(wachtwoord: str, hash_: str) -> bool:
-    if not hash_:
-        return False
-    try:
-        return _hasher.verify(hash_, wachtwoord)
-    except (VerificationError, InvalidHashError):
-        return False
 
 
 class Pogingen:
-    """Telt mislukte pogingen: per IP-adres, en in totaal (tegen veel adressen)."""
+    """Telt pogingen binnen een tijdvenster: per IP-adres, en in totaal (tegen veel
+    adressen). Voor mislukte logins, en voor nieuwe accounts."""
 
     def __init__(self, per_ip: int = 5, totaal: int = 30, venster: int = 15 * 60):
         self.per_ip, self.totaal, self.venster = per_ip, totaal, venster
@@ -62,20 +58,40 @@ class Pogingen:
         self._ip.pop(ip, None)
 
 
-def is_ingelogd(request: Request) -> bool:
-    return request.session.get("ingelogd") is True
+def log_in(request: Request, gebruiker_id: int, versie: int) -> None:
+    request.session.clear()
+    request.session["gebruiker"] = gebruiker_id
+    request.session["versie"] = versie
+
+
+def ingelogd_als(request: Request) -> tuple[int, int] | None:
+    """(account-id, sessieversie) uit de cookie. Of het account nog bestaat en de
+    versie klopt, controleert routes.huidige_gebruiker."""
+    gebruiker, versie = request.session.get("gebruiker"), request.session.get("versie")
+    if isinstance(gebruiker, int) and isinstance(versie, int):
+        return gebruiker, versie
+    return None
+
+
+class NietIngelogd(Exception):
+    """De cookie hoort bij geen (geldig) account meer: opnieuw inloggen."""
+
+
+def naar_login(request: Request) -> Response:
+    if request.headers.get("HX-Request"):
+        # HTMX volgt geen gewone redirect voor de hele pagina; dit wel.
+        return Response(status_code=401, headers={"HX-Redirect": "/login"})
+    pad = request.url.path
+    volgende = quote(pad + (f"?{request.url.query}" if request.url.query else ""))
+    return RedirectResponse(f"/login?volgende={volgende}", status_code=303)
 
 
 class LoginVereist(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         pad = request.url.path
-        if is_ingelogd(request) or pad in OPENBAAR or pad.startswith(OPENBAAR_MAP):
+        if ingelogd_als(request) or pad in OPENBAAR or pad.startswith(OPENBAAR_MAP):
             return await call_next(request)
-        if request.headers.get("HX-Request"):
-            # HTMX volgt geen gewone redirect voor de hele pagina; dit wel.
-            return Response(status_code=401, headers={"HX-Redirect": "/login"})
-        volgende = quote(pad + (f"?{request.url.query}" if request.url.query else ""))
-        return RedirectResponse(f"/login?volgende={volgende}", status_code=303)
+        return naar_login(request)
 
 
 def veilige_volgende(volgende: str | None) -> str:

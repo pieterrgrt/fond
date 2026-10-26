@@ -63,7 +63,8 @@
   });
 
   // --- Service worker: offline werken ---
-  if ("serviceWorker" in navigator && location.pathname !== "/login") {
+  const buiten = location.pathname === "/login" || location.pathname === "/aanmelden";
+  if ("serviceWorker" in navigator && !buiten) {
     navigator.serviceWorker.register("/sw.js").then(async () => {
       const sw = await navigator.serviceWorker.ready;
       // Hooguit eens per uur alle open lessen opnieuw op het toestel zetten.
@@ -75,10 +76,20 @@
       }
     }).catch(() => {});
   }
-  document.querySelectorAll('form[action="/uitloggen"]').forEach((form) => {
-    form.addEventListener("submit", () => {
-      navigator.serviceWorker?.controller?.postMessage("vergeten");
-      try { localStorage.removeItem("fond-bijgewerkt"); } catch (e) {}
-    });
+  // Uitloggen, of op de inlogpagina (de sessie kan ook verlopen zijn): geen pagina's
+  // van de vorige gebruiker op dit toestel laten staan. Concepten van reflecties
+  // alleen bij echt uitloggen weggooien; na een verlopen sessie wil je die terug.
+  function vergeet(ookConcepten) {
+    navigator.serviceWorker?.controller?.postMessage("vergeten");
+    try {
+      localStorage.removeItem("fond-bijgewerkt");
+      if (ookConcepten) {
+        Object.keys(localStorage).filter((k) => k.startsWith("fond-concept-")).forEach((k) => localStorage.removeItem(k));
+      }
+    } catch (e) {}
+  }
+  if (buiten) vergeet(false);
+  document.querySelectorAll('form[action="/uitloggen"], form[action="/account/verwijderen"]').forEach((form) => {
+    form.addEventListener("submit", (event) => { if (!event.defaultPrevented) vergeet(true); });
   });
 })();

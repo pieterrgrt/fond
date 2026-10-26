@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titel %}Account{% endblock %}
+{% block inhoud %}
+<header class="pagina-kop">
+  <h1>Account</h1>
+  <p class="inleiding">Ingelogd als {{ ik.naam }}.</p>
+</header>
+
+{% set meldingen = {
+  'gegevens': 'Je gegevens zijn bewaard.',
+  'wachtwoord': 'Je wachtwoord is gewijzigd. Op andere toestellen moet je opnieuw inloggen.',
+  'widget': 'De widgetsleutel is ingetrokken.',
+} %}
+{% if melding in meldingen %}<p class="melding" role="status">{{ meldingen[melding] }}</p>{% endif %}
+{% if fout %}<p class="melding fout" role="alert">{{ fout }}</p>{% endif %}
+
+<section class="kaart">
+  <h2 class="kaart-titel">Gegevens</h2>
+  {% if ik.email == 'eigenaar' %}
+  <p class="meta">Je logt nu in met <strong>eigenaar</strong>. Vul hier je eigen e-mailadres in; daarmee log je voortaan in.</p>
+  {% endif %}
+  <form method="post" action="/account/gegevens">
+    <label>Naam
+      <input name="naam" type="text" autocomplete="name" maxlength="100" value="{{ ik.naam }}" required>
+    </label>
+    <label>E-mailadres
+      <input name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" maxlength="254" value="{{ ik.email if ik.email != 'eigenaar' else '' }}" required>
+    </label>
+    <button class="knop" type="submit">Bewaren</button>
+  </form>
+</section>
+
+<section class="kaart">
+  <h2 class="kaart-titel">Wachtwoord</h2>
+  <form method="post" action="/account/wachtwoord">
+    <input type="text" name="gebruikersnaam" value="{{ ik.email }}" autocomplete="username" hidden>
+    <label>Huidig wachtwoord
+      <input name="huidig" type="password" autocomplete="current-password" required>
+    </label>
+    <label>Nieuw wachtwoord <span class="meta">(minstens 12 tekens)</span>
+      <input name="wachtwoord" type="password" autocomplete="new-password" minlength="12" required>
+    </label>
+    <label>Nog een keer
+      <input name="herhaling" type="password" autocomplete="new-password" minlength="12" required>
+    </label>
+    <button class="knop" type="submit">Wachtwoord wijzigen</button>
+  </form>
+</section>
+
+<section class="kaart" id="widget">
+  <h2 class="kaart-titel">Widget</h2>
+  <p>Met een widgetsleutel laat een widget op je telefoon (Scriptable) je volgende les zien. De sleutel geeft alleen toegang tot dat overzicht.</p>
+  {% if sleutel %}
+  <p class="melding" role="status">Je nieuwe sleutel. Kopieer hem nu: hij wordt maar één keer getoond.</p>
+  <input class="sleutel" type="text" value="{{ sleutel }}" readonly aria-label="Widgetsleutel">
+  <p class="meta">Gebruik hem als <code>Authorization: Bearer …</code> bij <code>/api/widget</code>.</p>
+  {% endif %}
+  <div class="knoppen">
+    <form method="post" action="/account/widget"{% if ik.widget_sleutel %} data-bevestig="Een nieuwe sleutel maken? De oude werkt dan niet meer."{% endif %}>
+      <button class="knop" type="submit">{% if ik.widget_sleutel %}Nieuwe sleutel maken{% else %}Sleutel maken{% endif %}</button>
+    </form>
+    {% if ik.widget_sleutel %}
+    <form method="post" action="/account/widget/intrekken">
+      <button class="knop-link" type="submit">Sleutel intrekken</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<form method="post" action="/uitloggen" class="uitloggen">
+  <button class="knop knop-hoofd" type="submit">Uitloggen</button>
+</form>
+
+<details class="kaart gevaar">
+  <summary>Account verwijderen</summary>
+  <p>Dit verwijdert je account met al je reflecties, foto's, vinkjes en je boodschappenlijst. Dat kan niet ongedaan worden.</p>
+  <form method="post" action="/account/verwijderen" data-bevestig="Je account en alles wat erbij hoort definitief verwijderen?">
+    <input type="text" name="gebruikersnaam" value="{{ ik.email }}" autocomplete="username" hidden>
+    <label>Je wachtwoord
+      <input name="wachtwoord" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="knop knop-gevaar" type="submit">Definitief verwijderen</button>
+  </form>
+</details>
+{% endblock %}

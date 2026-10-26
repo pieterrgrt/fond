@@ -6,12 +6,20 @@
   <h1 class="merk-groot" aria-label="Fond">{% include "partials/merk.svg" %}</h1>
   <p class="ondertitel">Een kookcursus, van commis tot chef.</p>
   {% if request.query_params.get('uitgelogd') %}<p class="melding">Je bent uitgelogd.</p>{% endif %}
+  {% if request.query_params.get('verwijderd') %}<p class="melding">Je account en alles wat erbij hoorde zijn verwijderd.</p>{% endif %}
   <form method="post" action="/login" class="kaart">
     <input type="hidden" name="volgende" value="{{ volgende }}">
-    <label for="wachtwoord">Wachtwoord</label>
-    <input id="wachtwoord" name="wachtwoord" type="password" autocomplete="current-password" required autofocus>
+    <label>E-mailadres
+      <input name="email" type="text" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" value="{{ email }}" required autofocus>
+    </label>
+    <label>Wachtwoord
+      <input name="wachtwoord" type="password" autocomplete="current-password" required>
+    </label>
     {% if fout %}<p class="fout" role="alert">{{ fout }}</p>{% endif %}
     <button class="knop knop-hoofd" type="submit">Inloggen</button>
   </form>
+  {% if settings.registratie %}
+  <p class="login-wissel">Nog geen account? <a href="/aanmelden">Meld je aan</a></p>
+  {% endif %}
 </main>
 {% endblock %}

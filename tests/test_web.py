@@ -12,6 +12,7 @@ from fond.config import PROJECT_ROOT, Settings
 from fond.main import create_app
 
 WACHTWOORD = "een-lang-test-wachtwoord"
+EMAIL = "kok@example.com"
 
 
 @pytest.fixture(scope="module")
@@ -19,25 +20,46 @@ def wachtwoord_hash():
     return PasswordHasher().hash(WACHTWOORD)
 
 
-@pytest.fixture
-def client(tmp_path, wachtwoord_hash):
-    settings = Settings(
-        content_dir=PROJECT_ROOT / "content",
-        data_dir=tmp_path,
-        password_hash=wachtwoord_hash,
-        secret_key="test",
+def maak_settings(tmp_path, **extra) -> Settings:
+    return Settings(
+        content_dir=PROJECT_ROOT / "content", data_dir=tmp_path, secret_key="test", **extra
     )
-    with TestClient(create_app(settings)) as c:
+
+
+@pytest.fixture
+def app(tmp_path):
+    return create_app(maak_settings(tmp_path))
+
+
+@pytest.fixture
+def client(app):
+    with TestClient(app) as c:
         yield c
+
+
+def aanmelden(c: TestClient, email: str = EMAIL, naam: str = "Kok", **velden):
+    data = {"naam": naam, "email": email, "wachtwoord": WACHTWOORD, "herhaling": WACHTWOORD}
+    return c.post("/aanmelden", data=data | velden, follow_redirects=False)
 
 
 @pytest.fixture
 def ingelogd(client):
-    r = client.post(
-        "/login", data={"wachtwoord": WACHTWOORD, "volgende": "/"}, follow_redirects=False
-    )
-    assert r.status_code == 303
+    r = aanmelden(client)
+    assert r.status_code == 303 and r.headers["location"] == "/?melding=welkom"
     return client
+
+
+@pytest.fixture
+def tweede(app, ingelogd):
+    """Een tweede gebruiker in dezelfde app, met een eigen cookie."""
+    with TestClient(app) as c:
+        assert aanmelden(c, "ander@example.com", "Ander").status_code == 303
+        yield c
+
+
+def inloggen(c: TestClient, email: str = EMAIL, wachtwoord: str = WACHTWOORD, **extra):
+    data = {"email": email, "wachtwoord": wachtwoord} | extra
+    return c.post("/login", data=data, follow_redirects=False)
 
 
 def test_zonder_login_naar_loginpagina(client):
@@ -53,20 +75,27 @@ def test_htmx_zonder_login(client):
     assert r.status_code == 401 and r.headers["HX-Redirect"] == "/login"
 
 
-def test_fout_wachtwoord_en_blokkade(client):
+def test_fout_wachtwoord_en_blokkade(ingelogd):
+    ingelogd.post("/uitloggen")
     for _ in range(5):
-        r = client.post("/login", data={"wachtwoord": "fout"})
+        r = inloggen(ingelogd, wachtwoord="fout")
         assert "klopt niet" in r.text
-    r = client.post("/login", data={"wachtwoord": WACHTWOORD})
-    assert "Te veel pogingen" in r.text
+    assert "Te veel pogingen" in inloggen(ingelogd).text
 
 
-def test_geen_open_redirect(client):
-    r = client.post(
-        "/login",
-        data={"wachtwoord": WACHTWOORD, "volgende": "//evil.example"},
-        follow_redirects=False,
-    )
+def test_onbekend_adres_zelfde_melding(client):
+    r = inloggen(client, "niemand@example.com")
+    assert "Dat e-mailadres of wachtwoord klopt niet" in r.text
+
+
+def test_inloggen_met_hoofdletters(ingelogd):
+    ingelogd.post("/uitloggen")
+    assert inloggen(ingelogd, " Kok@Example.COM ").status_code == 303
+
+
+def test_geen_open_redirect(ingelogd):
+    ingelogd.post("/uitloggen")
+    r = inloggen(ingelogd, volgende="//evil.example")
     assert r.headers["location"] == "/"
 
 
@@ -189,6 +218,175 @@ def test_woordenlijst(ingelogd):
 def test_uitloggen(ingelogd):
     ingelogd.post("/uitloggen")
     assert ingelogd.get("/", follow_redirects=False).status_code == 303
+    assert inloggen(ingelogd).status_code == 303
+    assert ingelogd.get("/").status_code == 200
+
+
+# --- Aanmelden en accounts --------------------------------------------------------
+
+
+def test_aanmelden_logt_meteen_in(ingelogd):
+    r = ingelogd.get("/?melding=welkom")
+    assert "Welkom bij Fond, Kok" in r.text
+    assert "Kok" in ingelogd.get("/account").text
+
+
+@pytest.mark.parametrize(
+    ("velden", "fout"),
+    [
+        ({"wachtwoord": "kort", "herhaling": "kort"}, "minstens 12 tekens"),
+        ({"herhaling": "iets-heel-anders-dan"}, "niet gelijk"),
+        ({"email": "geen-adres"}, "geen e-mailadres"),
+        ({"naam": "  "}, "Vul een naam in"),
+    ],
+)
+def test_aanmelden_controleert_formulier(client, velden, fout):
+    r = aanmelden(client, **velden)
+    assert r.status_code == 200 and fout in r.text
+    assert client.get("/", follow_redirects=False).status_code == 303
+
+
+def test_aanmelden_dubbel_adres(ingelogd):
+    ingelogd.post("/uitloggen")
+    r = aanmelden(ingelogd, email="KOK@example.com")
+    assert "al een account" in r.text
+
+
+def test_aanmelden_beperkt_per_ip(client):
+    for i in range(3):
+        assert aanmelden(client, f"kok{i}@example.com").status_code == 303
+    assert "te veel accounts" in aanmelden(client, "kok9@example.com").text
+
+
+def test_aanmelden_gesloten(tmp_path):
+    with TestClient(create_app(maak_settings(tmp_path, registratie=False))) as c:
+        assert "gesloten" in c.get("/aanmelden").text
+        assert "Meld je aan" not in c.get("/login").text
+        assert aanmelden(c).status_code == 403
+
+
+def test_gebruikers_zien_elkaars_gegevens_niet(ingelogd, tweede, tmp_path):
+    ingelogd.post(
+        "/les/mise-en-place/reflectie",
+        data={"cijfer": "7", "gekookt_op": "2026-10-01", "wat_niet": "Geheim van kok"},
+        files={"foto": ("chili.jpg", foto_bytes(), "image/jpeg")},
+    )
+    ingelogd.post("/boodschappen/toevoegen", data={"les_id": "mise-en-place", "porties": "3"})
+    ingelogd.post("/module/werkplek/beheerst", data={"uitspraak": ["1", "2", "3"]})
+    foto = next((tmp_path / "fotos").glob("*.jpg")).name
+
+    assert "Geheim van kok" in ingelogd.get("/logboek").text
+    assert "Geheim van kok" not in tweede.get("/logboek").text
+    assert "Je lijst is leeg" in tweede.get("/boodschappen").text
+    assert "badge-beheerst" not in tweede.get("/").text
+    assert "Begin hier" in tweede.get("/").text
+    assert tweede.get(f"/foto/{foto}").status_code == 404
+    assert ingelogd.get(f"/foto/{foto}").status_code == 200
+    reflectie_id = ingelogd.get("/logboek").text.split("/reflectie/")[1].split("/")[0]
+    assert tweede.post(f"/reflectie/{reflectie_id}/verwijderen").status_code == 404
+    assert "Geheim van kok" in ingelogd.get("/logboek").text
+
+
+def test_vinkjes_per_gebruiker(ingelogd, tweede):
+    pagina = ingelogd.get("/les/mise-en-place").text
+    punt = pagina.split('id="punt-')[1].split('"')[0]
+    ingelogd.post(f"/les/mise-en-place/vinkje/{punt}")
+    assert 'aria-checked="true"' not in tweede.get("/les/mise-en-place").text
+    assert 'aria-checked="true"' in tweede.post(f"/les/mise-en-place/vinkje/{punt}").text
+
+
+def test_gegevens_wijzigen(ingelogd, tweede):
+    r = ingelogd.post("/account/gegevens", data={"naam": "Chef", "email": "chef@example.com"})
+    assert "Je gegevens zijn bewaard" in r.text and "Ingelogd als Chef" in r.text
+    r = ingelogd.post("/account/gegevens", data={"naam": "Chef", "email": "ander@example.com"})
+    assert r.status_code == 400 and "al een account" in r.text
+    ingelogd.post("/uitloggen")
+    assert inloggen(ingelogd, "chef@example.com").status_code == 303
+
+
+def test_wachtwoord_wijzigen_logt_andere_toestellen_uit(app, ingelogd):
+    with TestClient(app) as telefoon:
+        assert inloggen(telefoon).status_code == 303
+        nieuw = "een-ander-lang-wachtwoord"
+        r = ingelogd.post(
+            "/account/wachtwoord", data={"huidig": "fout", "wachtwoord": nieuw, "herhaling": nieuw}
+        )
+        assert r.status_code == 400 and "huidige wachtwoord klopt niet" in r.text
+        r = ingelogd.post(
+            "/account/wachtwoord",
+            data={"huidig": WACHTWOORD, "wachtwoord": nieuw, "herhaling": nieuw},
+        )
+        assert "wachtwoord is gewijzigd" in r.text
+        assert ingelogd.get("/").status_code == 200  # dit toestel blijft ingelogd
+        assert telefoon.get("/", follow_redirects=False).status_code == 303
+        assert inloggen(telefoon).status_code == 200  # oud wachtwoord
+        assert inloggen(telefoon, wachtwoord=nieuw).status_code == 303
+
+
+def test_account_verwijderen(ingelogd, tweede, tmp_path):
+    ingelogd.post(
+        "/les/mise-en-place/reflectie",
+        data={"cijfer": "7", "gekookt_op": "2026-10-01"},
+        files={"foto": ("chili.jpg", foto_bytes(), "image/jpeg")},
+    )
+    tweede.post(
+        "/les/mise-en-place/reflectie",
+        data={"cijfer": "9", "gekookt_op": "2026-10-02"},
+        files={"foto": ("chili.jpg", foto_bytes(), "image/jpeg")},
+    )
+    assert len(list((tmp_path / "fotos").glob("*.jpg"))) == 2
+    r = ingelogd.post("/account/verwijderen", data={"wachtwoord": "fout"})
+    assert r.status_code == 400 and "staat er nog" in r.text
+    r = ingelogd.post("/account/verwijderen", data={"wachtwoord": WACHTWOORD})
+    assert "account en alles wat erbij hoorde zijn verwijderd" in r.text
+    assert len(list((tmp_path / "fotos").glob("*.jpg"))) == 1
+    assert inloggen(ingelogd).status_code == 200
+    assert "9" in tweede.get("/logboek").text and "keer gekookt" in tweede.get("/logboek").text
+    # Het adres is weer vrij.
+    assert aanmelden(ingelogd).status_code == 303
+    assert "Nog niets gekookt" in ingelogd.get("/logboek").text
+
+
+def test_oude_cookie_van_verwijderd_account(app, ingelogd):
+    """Een cookie op een ander toestel van een verwijderd account werkt niet meer,
+    ook niet als er daarna een nieuw account bij komt."""
+    with TestClient(app) as telefoon:
+        assert inloggen(telefoon).status_code == 303
+        ingelogd.post("/account/verwijderen", data={"wachtwoord": WACHTWOORD})
+        with TestClient(app) as nieuw:
+            aanmelden(nieuw, "nieuw@example.com", "Nieuw")
+        r = telefoon.get("/account", follow_redirects=False)
+        assert r.status_code == 303 and r.headers["location"].startswith("/login")
+
+
+def test_eigenaar_van_voor_de_accounts(tmp_path, wachtwoord_hash):
+    """Gegevens van vóór de accounts gaan naar 'eigenaar', met het oude wachtwoord."""
+    import sqlite3
+
+    from alembic import command
+
+    from fond.db import maak_engine
+    from fond.migreren import alembic_config
+
+    settings = maak_settings(tmp_path, password_hash=wachtwoord_hash)
+    command.upgrade(
+        alembic_config(settings.database_url, maak_engine(settings.database_url)), "0001"
+    )
+    with sqlite3.connect(tmp_path / "fond.db") as con:
+        con.execute(
+            "INSERT INTO reflectie (les_id, gekookt_op, porties, cijfer, wat_lukte, wat_niet,"
+            " volgende_keer) VALUES ('mise-en-place', '2026-10-01', 3, 8, 'Oud', '', '')"
+        )
+        con.execute("INSERT INTO lijst_item (les_id, porties) VALUES ('het-koksmes', 2)")
+    with TestClient(create_app(settings)) as c:
+        assert inloggen(c, "eigenaar").status_code == 303
+        assert "Oud" in c.get("/logboek").text
+        assert "Het koksmes" in c.get("/boodschappen").text
+        assert "Vul hier je eigen e-mailadres in" in c.get("/account").text
+        # Een nieuw account begint leeg.
+        c.post("/uitloggen")
+        aanmelden(c)
+        assert "Nog niets gekookt" in c.get("/logboek").text
 
 
 def test_pwa_bestanden_openbaar(client):
@@ -216,31 +414,43 @@ def test_beveiligingskoppen(client):
 # --- Widget -----------------------------------------------------------------------
 
 
-@pytest.fixture
-def widget_client(tmp_path, wachtwoord_hash):
-    settings = Settings(
-        content_dir=PROJECT_ROOT / "content",
-        data_dir=tmp_path,
-        password_hash=wachtwoord_hash,
-        secret_key="test",
-        widget_token="sleutel",
-    )
-    with TestClient(create_app(settings)) as c:
-        yield c
+def widgetsleutel(c: TestClient) -> str:
+    r = c.post("/account/widget")
+    assert r.headers["Cache-Control"] == "no-store"
+    return r.text.split('class="sleutel" type="text" value="')[1].split('"')[0]
 
 
-def test_widget_uit_zonder_sleutel(client):
-    assert client.get("/api/widget", headers={"Authorization": "Bearer x"}).status_code == 404
-
-
-def test_widget_vraagt_juiste_sleutel(widget_client):
-    assert widget_client.get("/api/widget").status_code == 401
+def test_widget_vraagt_juiste_sleutel(ingelogd):
+    assert ingelogd.get("/api/widget").status_code == 401
     fout = {"Authorization": "Bearer fout"}
-    assert widget_client.get("/api/widget", headers=fout).status_code == 401
+    assert ingelogd.get("/api/widget", headers=fout).status_code == 401
+    assert ingelogd.get("/api/widget", headers={"Authorization": "Bearer "}).status_code == 401
 
 
-def test_widget_geeft_volgende_les(widget_client):
-    r = widget_client.get("/api/widget", headers={"Authorization": "Bearer sleutel"})
+def test_widget_per_account(ingelogd, tweede):
+    ingelogd.post("/boodschappen/toevoegen", data={"les_id": "mise-en-place", "porties": "3"})
+    mijn, andere = widgetsleutel(ingelogd), widgetsleutel(tweede)
+    assert mijn != andere
+    get = lambda s: ingelogd.get("/api/widget", headers={"Authorization": f"Bearer {s}"})  # noqa: E731
+    assert get(mijn).json()["boodschappen"] == 1
+    assert get(andere).json()["boodschappen"] == 0
+    nieuw = widgetsleutel(ingelogd)
+    assert get(mijn).status_code == 401 and get(nieuw).status_code == 200
+    ingelogd.post("/account/widget/intrekken")
+    assert get(nieuw).status_code == 401
+
+
+def test_oude_widgetsleutel_geeft_eerste_account(tmp_path):
+    with TestClient(create_app(maak_settings(tmp_path, widget_token="sleutel"))) as c:
+        assert c.get("/api/widget", headers={"Authorization": "Bearer sleutel"}).status_code == 401
+        aanmelden(c)
+        r = c.get("/api/widget", headers={"Authorization": "Bearer sleutel"})
+        assert r.status_code == 200
+
+
+def test_widget_geeft_volgende_les(ingelogd):
+    sleutel = widgetsleutel(ingelogd)
+    r = ingelogd.get("/api/widget", headers={"Authorization": f"Bearer {sleutel}"})
     assert r.status_code == 200
     data = r.json()
     assert data["volgende"]["titel"] and data["volgende"]["url"].startswith("/les/")

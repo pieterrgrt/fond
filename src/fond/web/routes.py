@@ -19,11 +19,13 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from fond.auth import controleer_wachtwoord, veilige_volgende
+from fond import gebruikers
+from fond.auth import NietIngelogd, ingelogd_als, log_in, veilige_volgende
 from fond.boodschappen import maak_lijst
 from fond.content.loader import Catalogus
 from fond.content.models import Les
-from fond.db import BeheersteModule, LijstItem, Reflectie, Vinkje
+from fond.db import BeheersteModule, Gebruiker, LijstItem, Reflectie, Vinkje
+from fond.gebruikers import AccountFout
 from fond.herhaling import te_herhalen
 from fond.schalen import schaal_recept
 from fond.voortgang import Status, Voortgang, les_status, module_status, ontbrekend, volgende_les
@@ -63,11 +65,44 @@ Cat = Annotated[Catalogus, Depends(catalogus)]
 Db = Annotated[Session, Depends(db)]
 
 
-def laad_voortgang(sessie: Session) -> Voortgang:
+def huidige_gebruiker(request: Request, sessie: Db) -> Gebruiker:
+    ingelogd = ingelogd_als(request)
+    gebruiker = sessie.get(Gebruiker, ingelogd[0]) if ingelogd else None
+    # Account verwijderd, of het wachtwoord is intussen veranderd: opnieuw inloggen.
+    if gebruiker is None or gebruiker.sessie_versie != ingelogd[1]:
+        raise NietIngelogd
+    return gebruiker
+
+
+Ik = Annotated[Gebruiker, Depends(huidige_gebruiker)]
+
+
+def laad_voortgang(sessie: Session, ik: Gebruiker) -> Voortgang:
     return Voortgang(
-        afgeronde_lessen=frozenset(sessie.scalars(select(Reflectie.les_id).distinct())),
-        beheerste_modules=frozenset(sessie.scalars(select(BeheersteModule.module_id))),
+        afgeronde_lessen=frozenset(
+            sessie.scalars(
+                select(Reflectie.les_id).where(Reflectie.gebruiker_id == ik.id).distinct()
+            )
+        ),
+        beheerste_modules=frozenset(
+            sessie.scalars(
+                select(BeheersteModule.module_id).where(BeheersteModule.gebruiker_id == ik.id)
+            )
+        ),
     )
+
+
+def gekookte_lessen(sessie: Session, ik: Gebruiker) -> list:
+    return sessie.execute(
+        select(Reflectie.les_id, Reflectie.gekookt_op).where(Reflectie.gebruiker_id == ik.id)
+    ).all()
+
+
+def mijn_reflectie(sessie: Session, ik: Gebruiker, reflectie_id: int) -> Reflectie:
+    rij = sessie.get(Reflectie, reflectie_id)
+    if rij is None or rij.gebruiker_id != ik.id:
+        raise HTTPException(404)
+    return rij
 
 
 def vind_les(cat: Catalogus, les_id: str) -> Les:
@@ -86,38 +121,77 @@ def kies_porties(les: Les, porties: int | None) -> int:
     return min(max(porties or standaard, 1), 12)
 
 
-def render(request: Request, naam: str, **context) -> HTMLResponse:
-    return templates.TemplateResponse(request, naam, context)
+def render(request: Request, template: str, **context) -> HTMLResponse:
+    return templates.TemplateResponse(request, template, context)
 
 
 # --- Inloggen ---------------------------------------------------------------------
 
 
+def ip_van(request: Request) -> str:
+    return request.client.host if request.client else "?"
+
+
 @router.get("/login")
 def login_pagina(request: Request, volgende: str = "/"):
-    return render(request, "login.html", volgende=veilige_volgende(volgende), fout=None)
+    return render(request, "login.html", volgende=veilige_volgende(volgende), email="", fout=None)
 
 
 @router.post("/login")
 def login(
-    request: Request, wachtwoord: Annotated[str, Form()], volgende: Annotated[str, Form()] = "/"
+    request: Request,
+    sessie: Db,
+    wachtwoord: Annotated[str, Form()],
+    email: Annotated[str, Form()] = "",
+    volgende: Annotated[str, Form()] = "/",
 ):
     pogingen = request.app.state.pogingen
-    ip = request.client.host if request.client else "?"
+    ip = ip_van(request)
+
+    def opnieuw(fout: str):
+        return render(request, "login.html", volgende=volgende, email=email, fout=fout)
+
     if pogingen.geblokkeerd(ip):
-        return render(
-            request,
-            "login.html",
-            volgende=volgende,
-            fout="Te veel pogingen. Probeer het over een kwartier opnieuw.",
-        )
-    if not controleer_wachtwoord(wachtwoord, request.app.state.settings.password_hash):
+        return opnieuw("Te veel pogingen. Probeer het over een kwartier opnieuw.")
+    gebruiker = gebruikers.inloggen(sessie, email, wachtwoord)
+    if gebruiker is None:
         pogingen.mislukt(ip)
-        return render(request, "login.html", volgende=volgende, fout="Dat wachtwoord klopt niet.")
+        return opnieuw("Dat e-mailadres of wachtwoord klopt niet.")
     pogingen.gelukt(ip)
-    request.session.clear()
-    request.session["ingelogd"] = True
+    log_in(request, gebruiker.id, gebruiker.sessie_versie)
     return RedirectResponse(veilige_volgende(volgende), status_code=303)
+
+
+@router.get("/aanmelden")
+def aanmelden_pagina(request: Request):
+    return render(request, "aanmelden.html", naam="", email="", fout=None)
+
+
+@router.post("/aanmelden")
+def aanmelden(
+    request: Request,
+    sessie: Db,
+    naam: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    wachtwoord: Annotated[str, Form()],
+    herhaling: Annotated[str, Form()],
+):
+    def opnieuw(fout: str):
+        return render(request, "aanmelden.html", naam=naam, email=email, fout=fout)
+
+    if not request.app.state.settings.registratie:
+        raise HTTPException(403, "Aanmelden is gesloten.")
+    aanmeldingen = request.app.state.aanmeldingen
+    ip = ip_van(request)
+    if aanmeldingen.geblokkeerd(ip):
+        return opnieuw("Er zijn net te veel accounts gemaakt. Probeer het over een uur opnieuw.")
+    try:
+        gebruiker = gebruikers.maak_gebruiker(sessie, naam, email, wachtwoord, herhaling)
+    except AccountFout as fout:
+        return opnieuw(str(fout))
+    aanmeldingen.mislukt(ip)  # telt als poging, ook al is hij gelukt
+    log_in(request, gebruiker.id, gebruiker.sessie_versie)
+    return RedirectResponse("/?melding=welkom", status_code=303)
 
 
 @router.post("/uitloggen")
@@ -138,17 +212,18 @@ def gezond():
 def widget(request: Request, cat: Cat, sessie: Db):
     """Klein overzicht voor de Scriptable-widget.
 
-    Toegang: Authorization: Bearer <FOND_WIDGET_TOKEN>.
+    Toegang: Authorization: Bearer <widgetsleutel van je account, zie /account>.
     """
-    token = request.app.state.settings.widget_token.strip()
-    if not token:
-        raise HTTPException(404, "Niet gevonden")
     gegeven = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
-    if not hmac.compare_digest(gegeven.encode(), token.encode()):
+    ik = gebruikers.gebruiker_bij_sleutel(sessie, gegeven)
+    oud = request.app.state.settings.widget_token.strip()
+    if ik is None and oud and hmac.compare_digest(gegeven.encode(), oud.encode()):
+        ik = sessie.scalar(select(Gebruiker).order_by(Gebruiker.id).limit(1))
+    if ik is None:
         return JSONResponse({"fout": "Onbekende sleutel"}, status_code=401)
 
-    vg = laad_voortgang(sessie)
-    gekookt = sessie.execute(select(Reflectie.les_id, Reflectie.gekookt_op)).all()
+    vg = laad_voortgang(sessie, ik)
+    gekookt = gekookte_lessen(sessie, ik)
     open_lessen = {les.id for les in cat.alle_lessen() if les_status(cat, vg, les) == Status.open}
     volgende = volgende_les(cat, vg)
 
@@ -170,6 +245,7 @@ def widget(request: Request, cat: Cat, sessie: Db):
     lessen_niveau = [les for m in huidig.modules for les in cat.lessen_per_module.get(m.id, [])]
     laatst = sessie.execute(
         select(Reflectie.les_id, Reflectie.gekookt_op, Reflectie.cijfer)
+        .where(Reflectie.gebruiker_id == ik.id)
         .order_by(Reflectie.gekookt_op.desc(), Reflectie.id.desc())
         .limit(1)
     ).first()
@@ -198,7 +274,11 @@ def widget(request: Request, cat: Cat, sessie: Db):
                 if laatst and laatst.les_id in cat.lessen
                 else None
             ),
-            "boodschappen": len(sessie.scalars(select(LijstItem.les_id)).all()),
+            "boodschappen": len(
+                sessie.scalars(
+                    select(LijstItem.les_id).where(LijstItem.gebruiker_id == ik.id)
+                ).all()
+            ),
         },
         headers={"Cache-Control": "no-store"},
     )
@@ -208,9 +288,9 @@ def widget(request: Request, cat: Cat, sessie: Db):
 
 
 @router.get("/")
-def overzicht(request: Request, cat: Cat, sessie: Db, melding: str | None = None):
-    vg = laad_voortgang(sessie)
-    gekookt = sessie.execute(select(Reflectie.les_id, Reflectie.gekookt_op)).all()
+def overzicht(request: Request, cat: Cat, sessie: Db, ik: Ik, melding: str | None = None):
+    vg = laad_voortgang(sessie, ik)
+    gekookt = gekookte_lessen(sessie, ik)
     open_lessen = {les.id for les in cat.alle_lessen() if les_status(cat, vg, les) == Status.open}
     niveaus = []
     for niveau in cat.niveaus:
@@ -231,28 +311,33 @@ def overzicht(request: Request, cat: Cat, sessie: Db, melding: str | None = None
         herhalingen=te_herhalen(cat, gekookt, date.today(), open_lessen)[:3],
         aantal_af=len(vg.afgeronde_lessen),
         melding=melding,
+        ik=ik,
         Status=Status,
     )
 
 
 @router.post("/module/{module_id}/beheerst")
 def module_beheerst(
-    cat: Cat, sessie: Db, module_id: str, uitspraak: Annotated[list[str] | None, Form()] = None
+    cat: Cat,
+    sessie: Db,
+    ik: Ik,
+    module_id: str,
+    uitspraak: Annotated[list[str] | None, Form()] = None,
 ):
     module = cat.modules.get(module_id)
     if module is None:
         raise HTTPException(404)
     if not module.zelftoets or len(set(uitspraak or [])) < len(module.zelftoets):
         return RedirectResponse(f"/?melding=zelftoets#module-{module_id}", status_code=303)
-    if sessie.get(BeheersteModule, module_id) is None:
-        sessie.add(BeheersteModule(module_id=module_id))
+    if sessie.get(BeheersteModule, (ik.id, module_id)) is None:
+        sessie.add(BeheersteModule(gebruiker_id=ik.id, module_id=module_id))
         sessie.commit()
     return RedirectResponse(f"/#module-{module_id}", status_code=303)
 
 
 @router.post("/module/{module_id}/intrekken")
-def module_intrekken(sessie: Db, module_id: str):
-    if (rij := sessie.get(BeheersteModule, module_id)) is not None:
+def module_intrekken(sessie: Db, ik: Ik, module_id: str):
+    if (rij := sessie.get(BeheersteModule, (ik.id, module_id))) is not None:
         sessie.delete(rij)
         sessie.commit()
     return RedirectResponse(f"/#module-{module_id}", status_code=303)
@@ -261,14 +346,18 @@ def module_intrekken(sessie: Db, module_id: str):
 # --- Lessen -----------------------------------------------------------------------
 
 
-def les_context(cat: Catalogus, sessie: Session, les: Les, porties: int) -> dict:
-    vg = laad_voortgang(sessie)
+def les_context(cat: Catalogus, sessie: Session, ik: Gebruiker, les: Les, porties: int) -> dict:
+    vg = laad_voortgang(sessie, ik)
     recept = les.meta.recept
     geschaald = schaal_recept(recept, cat.ingredienten, porties) if recept else []
     groepen: dict[str | None, list] = {}
     for regel in geschaald:
         groepen.setdefault(regel.bron.groep, []).append(regel)
-    vinkjes = set(sessie.scalars(select(Vinkje.punt).where(Vinkje.les_id == les.id)))
+    vinkjes = set(
+        sessie.scalars(
+            select(Vinkje.punt).where(Vinkje.gebruiker_id == ik.id, Vinkje.les_id == les.id)
+        )
+    )
     alle = cat.alle_lessen()
     index = alle.index(les)
     return {
@@ -287,10 +376,10 @@ def les_context(cat: Catalogus, sessie: Session, les: Les, porties: int) -> dict
         ],
         "reflecties": sessie.scalars(
             select(Reflectie)
-            .where(Reflectie.les_id == les.id)
+            .where(Reflectie.gebruiker_id == ik.id, Reflectie.les_id == les.id)
             .order_by(Reflectie.gekookt_op.desc())
         ).all(),
-        "op_lijst": sessie.get(LijstItem, les.id),
+        "op_lijst": sessie.get(LijstItem, (ik.id, les.id)),
         "vorige": alle[index - 1] if index > 0 else None,
         "volgende": alle[index + 1] if index + 1 < len(alle) else None,
         "Status": Status,
@@ -303,29 +392,30 @@ def les_pagina(
     request: Request,
     cat: Cat,
     sessie: Db,
+    ik: Ik,
     les_id: str,
     porties: Annotated[int | None, Query()] = None,
     afgerond: bool = False,
 ):
     les = vind_les(cat, les_id)
-    context = les_context(cat, sessie, les, kies_porties(les, porties))
-    vg = laad_voortgang(sessie)
+    context = les_context(cat, sessie, ik, les, kies_porties(les, porties))
+    vg = laad_voortgang(sessie, ik)
     context["afgerond"] = afgerond
     context["daarna"] = volgende_les(cat, vg) if afgerond else None
     return render(request, "les.html", **context)
 
 
 @router.post("/les/{les_id}/vinkje/{punt}")
-def vinkje(request: Request, cat: Cat, sessie: Db, les_id: str, punt: str):
+def vinkje(request: Request, cat: Cat, sessie: Db, ik: Ik, les_id: str, punt: str):
     les = vind_les(cat, les_id)
     teksten = {punt_id(t): t for t in les.meta.opdracht}
     if punt not in teksten:
         raise HTTPException(404)
-    bestaand = sessie.get(Vinkje, (les_id, punt))
+    bestaand = sessie.get(Vinkje, (ik.id, les_id, punt))
     if bestaand:
         sessie.delete(bestaand)
     else:
-        sessie.add(Vinkje(les_id=les_id, punt=punt))
+        sessie.add(Vinkje(gebruiker_id=ik.id, les_id=les_id, punt=punt))
     sessie.commit()
     return render(
         request,
@@ -342,6 +432,7 @@ def kookmodus(
     request: Request,
     cat: Cat,
     sessie: Db,
+    ik: Ik,
     les_id: str,
     porties: Annotated[int | None, Query()] = None,
 ):
@@ -349,7 +440,7 @@ def kookmodus(
     if les.meta.recept is None:
         return RedirectResponse(f"/les/{les_id}", status_code=303)
     return render(
-        request, "koken.html", **les_context(cat, sessie, les, kies_porties(les, porties))
+        request, "koken.html", **les_context(cat, sessie, ik, les, kies_porties(les, porties))
     )
 
 
@@ -380,6 +471,7 @@ def reflectie(
     request: Request,
     cat: Cat,
     sessie: Db,
+    ik: Ik,
     les_id: str,
     cijfer: Annotated[int, Form(ge=1, le=10)],
     gekookt_op: Annotated[date, Form()],
@@ -390,13 +482,14 @@ def reflectie(
     foto: Annotated[UploadFile | None, File()] = None,
 ):
     les = vind_les(cat, les_id)
-    if les_status(cat, laad_voortgang(sessie), les) == Status.op_slot:
+    if les_status(cat, laad_voortgang(sessie, ik), les) == Status.op_slot:
         raise HTTPException(403, "Deze les zit nog op slot.")
     naam = (
         bewaar_foto(foto, request.app.state.settings.foto_dir) if foto and foto.filename else None
     )
     sessie.add(
         Reflectie(
+            gebruiker_id=ik.id,
             les_id=les_id,
             cijfer=cijfer,
             gekookt_op=gekookt_op,
@@ -412,10 +505,8 @@ def reflectie(
 
 
 @router.post("/reflectie/{reflectie_id}/verwijderen")
-def reflectie_verwijderen(request: Request, sessie: Db, reflectie_id: int):
-    rij = sessie.get(Reflectie, reflectie_id)
-    if rij is None:
-        raise HTTPException(404)
+def reflectie_verwijderen(request: Request, sessie: Db, ik: Ik, reflectie_id: int):
+    rij = mijn_reflectie(sessie, ik, reflectie_id)
     if rij.foto:
         (request.app.state.settings.foto_dir / rij.foto).unlink(missing_ok=True)
     sessie.delete(rij)
@@ -424,9 +515,11 @@ def reflectie_verwijderen(request: Request, sessie: Db, reflectie_id: int):
 
 
 @router.get("/logboek")
-def logboek(request: Request, cat: Cat, sessie: Db):
+def logboek(request: Request, cat: Cat, sessie: Db, ik: Ik):
     reflecties = sessie.scalars(
-        select(Reflectie).order_by(Reflectie.gekookt_op.desc(), Reflectie.id.desc())
+        select(Reflectie)
+        .where(Reflectie.gebruiker_id == ik.id)
+        .order_by(Reflectie.gekookt_op.desc(), Reflectie.id.desc())
     ).all()
     cijfers = [r.cijfer for r in reflecties]
     return render(
@@ -438,8 +531,14 @@ def logboek(request: Request, cat: Cat, sessie: Db):
 
 
 @router.get("/foto/{naam}")
-def foto(request: Request, naam: str):
+def foto(request: Request, sessie: Db, ik: Ik, naam: str):
     if not FOTO_NAAM.match(naam):
+        raise HTTPException(404)
+    # Alleen je eigen foto's, ook als iemand de (willekeurige) naam van een ander kent.
+    van_mij = sessie.scalar(
+        select(Reflectie.id).where(Reflectie.gebruiker_id == ik.id, Reflectie.foto == naam)
+    )
+    if van_mij is None:
         raise HTTPException(404)
     pad = request.app.state.settings.foto_dir / naam
     if not pad.exists():
@@ -455,8 +554,10 @@ def foto(request: Request, naam: str):
 
 
 @router.get("/boodschappen")
-def boodschappen(request: Request, cat: Cat, sessie: Db):
-    items = sessie.scalars(select(LijstItem).order_by(LijstItem.toegevoegd)).all()
+def boodschappen(request: Request, cat: Cat, sessie: Db, ik: Ik):
+    items = sessie.scalars(
+        select(LijstItem).where(LijstItem.gebruiker_id == ik.id).order_by(LijstItem.toegevoegd)
+    ).all()
     keuze = [(cat.lessen[i.les_id], i.porties) for i in items if i.les_id in cat.lessen]
     return render(
         request,
@@ -494,31 +595,32 @@ def lijst_sleutel(keuze: list[tuple[Les, int]]) -> str:
 def lijst_toevoegen(
     cat: Cat,
     sessie: Db,
+    ik: Ik,
     les_id: Annotated[str, Form()],
     porties: Annotated[int, Form(ge=1, le=12)],
     terug: Annotated[str, Form()] = "/boodschappen",
 ):
     vind_les(cat, les_id)
-    item = sessie.get(LijstItem, les_id)
+    item = sessie.get(LijstItem, (ik.id, les_id))
     if item:
         item.porties = porties
     else:
-        sessie.add(LijstItem(les_id=les_id, porties=porties))
+        sessie.add(LijstItem(gebruiker_id=ik.id, les_id=les_id, porties=porties))
     sessie.commit()
     return RedirectResponse(veilige_volgende(terug), status_code=303)
 
 
 @router.post("/boodschappen/verwijderen")
-def lijst_verwijderen(sessie: Db, les_id: Annotated[str, Form()]):
-    if (item := sessie.get(LijstItem, les_id)) is not None:
+def lijst_verwijderen(sessie: Db, ik: Ik, les_id: Annotated[str, Form()]):
+    if (item := sessie.get(LijstItem, (ik.id, les_id))) is not None:
         sessie.delete(item)
         sessie.commit()
     return RedirectResponse("/boodschappen", status_code=303)
 
 
 @router.post("/boodschappen/leegmaken")
-def lijst_leegmaken(sessie: Db):
-    for item in sessie.scalars(select(LijstItem)).all():
+def lijst_leegmaken(sessie: Db, ik: Ik):
+    for item in sessie.scalars(select(LijstItem).where(LijstItem.gebruiker_id == ik.id)).all():
         sessie.delete(item)
     sessie.commit()
     return RedirectResponse("/boodschappen", status_code=303)
@@ -538,6 +640,86 @@ def woordenlijst(request: Request, cat: Cat):
     )
 
 
+# --- Account ----------------------------------------------------------------------
+
+
+def account_pagina(request: Request, ik: Gebruiker, status_code: int = 200, **context):
+    context = {"ik": ik, "melding": None, "fout": None, "sleutel": None, **context}
+    return templates.TemplateResponse(request, "account.html", context, status_code=status_code)
+
+
+@router.get("/account")
+def account(request: Request, ik: Ik, melding: str | None = None):
+    return account_pagina(request, ik, melding=melding)
+
+
+@router.post("/account/gegevens")
+def account_gegevens(
+    request: Request,
+    sessie: Db,
+    ik: Ik,
+    naam: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+):
+    try:
+        gebruikers.wijzig_gegevens(sessie, ik, naam, email)
+    except AccountFout as fout:
+        sessie.rollback()
+        return account_pagina(request, ik, fout=str(fout), status_code=400)
+    return RedirectResponse("/account?melding=gegevens", status_code=303)
+
+
+@router.post("/account/wachtwoord")
+def account_wachtwoord(
+    request: Request,
+    sessie: Db,
+    ik: Ik,
+    huidig: Annotated[str, Form()],
+    wachtwoord: Annotated[str, Form()],
+    herhaling: Annotated[str, Form()],
+):
+    try:
+        if not gebruikers.controleer_wachtwoord(huidig, ik.wachtwoord_hash):
+            raise AccountFout("Je huidige wachtwoord klopt niet.")
+        gebruikers.keur_wachtwoord(wachtwoord, herhaling)
+    except AccountFout as fout:
+        return account_pagina(request, ik, fout=str(fout), status_code=400)
+    gebruikers.zet_wachtwoord(sessie, ik, wachtwoord)
+    # Andere toestellen zijn nu uitgelogd; dit toestel blijft ingelogd.
+    log_in(request, ik.id, ik.sessie_versie)
+    return RedirectResponse("/account?melding=wachtwoord", status_code=303)
+
+
+@router.post("/account/widget")
+def account_widget(request: Request, sessie: Db, ik: Ik):
+    sleutel = gebruikers.nieuwe_widgetsleutel(sessie, ik)
+    response = account_pagina(request, ik, sleutel=sleutel)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/account/widget/intrekken")
+def account_widget_intrekken(sessie: Db, ik: Ik):
+    ik.widget_sleutel = None
+    sessie.commit()
+    return RedirectResponse("/account?melding=widget", status_code=303)
+
+
+@router.post("/account/verwijderen")
+def account_verwijderen(request: Request, sessie: Db, ik: Ik, wachtwoord: Annotated[str, Form()]):
+    if not gebruikers.controleer_wachtwoord(wachtwoord, ik.wachtwoord_hash):
+        return account_pagina(
+            request, ik, fout="Dat wachtwoord klopt niet; je account staat er nog.", status_code=400
+        )
+    for naam in gebruikers.fotos_van(sessie, ik.id):
+        (request.app.state.settings.foto_dir / naam).unlink(missing_ok=True)
+    # De rest (reflecties, vinkjes, lijst) verdwijnt mee via ON DELETE CASCADE.
+    sessie.delete(ik)
+    sessie.commit()
+    request.session.clear()
+    return RedirectResponse("/login?verwijderd=1", status_code=303)
+
+
 # --- PWA --------------------------------------------------------------------------
 
 
@@ -555,11 +737,11 @@ def manifest():
 
 
 @router.get("/offline.json")
-def offline_lijst(cat: Cat, sessie: Db):
+def offline_lijst(cat: Cat, sessie: Db, ik: Ik):
     """Alle pagina's die de service worker vooraf bewaart, zodat ze offline werken:
     elke les die open of af is, met de kookmodus voor 1, 2 en 3 porties."""
-    vg = laad_voortgang(sessie)
-    urls = ["/", "/boodschappen", "/logboek", "/woordenlijst"]
+    vg = laad_voortgang(sessie, ik)
+    urls = ["/", "/boodschappen", "/logboek", "/woordenlijst", "/account"]
     for les in cat.alle_lessen():
         if les_status(cat, vg, les) == Status.op_slot:
             continue

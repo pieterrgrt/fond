@@ -3,6 +3,9 @@
 {% block inhoud %}
 {% set romeins = ['I', 'II', 'III', 'IV', 'V'] %}
 
+{% if melding == 'welkom' %}
+<p class="melding" role="status">Welkom bij Fond, {{ ik.naam }}. Begin hieronder met je eerste les.</p>
+{% endif %}
 {% if melding == 'zelftoets' %}
 <p class="melding fout" role="alert">Vink alle uitspraken aan om een module als beheerst te markeren.</p>
 {% endif %}
@@ -104,7 +107,5 @@
 </section>
 {% endfor %}
 
-<form method="post" action="/uitloggen" class="uitloggen">
-  <button class="knop-link" type="submit">Uitloggen</button>
-</form>
+<p class="uitloggen"><a href="/account">Je account</a> · ingelogd als {{ ik.naam }}</p>
 {% endblock %}
