@@ -59,7 +59,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== location.origin) return;
-  if (url.pathname === "/sw.js" || url.pathname === "/login") return;
+  if (["/sw.js", "/login", "/aanmelden"].includes(url.pathname)) return;
   if (url.pathname.startsWith("/static/") || url.pathname.startsWith("/foto/")) {
     event.respondWith(cacheEerst(request));
   } else if (request.mode === "navigate" || request.headers.get("HX-Request") || url.pathname === "/offline.json") {
@@ -87,7 +87,14 @@ async function allesBijwerken() {
 self.addEventListener("message", (event) => {
   if (event.data === "bijwerken") event.waitUntil(allesBijwerken());
   if (event.data === "vergeten") {
-    // Bij uitloggen: bewaarde pagina's weg (je reflecties en lijst staan erin).
-    event.waitUntil(caches.delete(PAGINAS));
+    // Bij uitloggen: bewaarde pagina's en foto's weg (je reflecties en lijst staan
+    // erin), zodat wie hierna op dit toestel inlogt ze niet ziet.
+    event.waitUntil((async () => {
+      await caches.delete(PAGINAS);
+      const bestanden = await caches.open(STATISCH);
+      for (const req of await bestanden.keys()) {
+        if (new URL(req.url).pathname.startsWith("/foto/")) await bestanden.delete(req);
+      }
+    })());
   }
 });

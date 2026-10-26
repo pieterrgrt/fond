@@ -126,8 +126,13 @@ p { margin: 0 0 .8em; }
 .merk { display: block; color: var(--inkt); padding: .35rem 0; }
 .merk-svg { display: block; width: auto; height: 1.85rem; overflow: visible; }
 .merk-punt { fill: var(--accent); }
-.thema-knop {
+.account-knop {
   margin-left: auto; width: var(--raak); height: var(--raak);
+  display: grid; place-items: center; color: var(--zacht); border-radius: 50%;
+}
+.account-knop[aria-current="page"] { color: var(--accent); }
+.thema-knop {
+  width: var(--raak); height: var(--raak);
   display: grid; place-items: center;
   border: 0; background: none; color: var(--zacht); border-radius: 50%; cursor: pointer;
 }
@@ -387,6 +392,15 @@ a.les-link:hover { background: var(--kaart); }
 .merk-groot { margin: 0 0 .5rem; color: var(--inkt); }
 .merk-groot .merk-svg { height: 4.5rem; margin-left: -.2rem; }
 .login .knop { width: 100%; margin-top: .5rem; }
+.login .ondertitel { margin-bottom: .25rem; }
+.login-wissel { text-align: center; color: var(--zacht); }
+
+/* --- Account --- */
+.sleutel { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .9rem; margin-bottom: .5rem; }
+.gevaar summary { cursor: pointer; font-weight: 700; color: var(--accent); min-height: var(--raak); display: flex; align-items: center; }
+.gevaar[open] summary { margin-bottom: .25rem; }
+.knop-gevaar { border-color: var(--accent); color: var(--accent); }
+.uitloggen .knop { min-width: 12rem; }
 
 .pagina-kop h1 { margin-top: .3em; }
 .leeg { text-align: center; }

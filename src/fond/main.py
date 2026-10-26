@@ -10,10 +10,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from fond.auth import LoginVereist, Pogingen
+from fond.auth import LoginVereist, NietIngelogd, Pogingen, naar_login
 from fond.config import Settings, get_settings
 from fond.content.loader import laad_catalogus
 from fond.db import maak_engine, maak_sessiefabriek
+from fond.gebruikers import koppel_eigenaar
 from fond.migreren import migreer
 from fond.web import routes
 from fond.web.templates import templates
@@ -59,12 +60,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         migreer(settings.database_url, engine)
         app.state.catalogus = laad_catalogus(settings.content_dir)
         app.state.sessies = maak_sessiefabriek(engine)
+        koppel_eigenaar(app.state.sessies, settings.password_hash)
         yield
         engine.dispose()
 
     app = FastAPI(title="Fond", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.pogingen = Pogingen()
+    # Nieuwe accounts per IP-adres: hooguit 3 per uur, en 30 per uur in totaal.
+    app.state.aanmeldingen = Pogingen(per_ip=3, totaal=30, venster=3600)
 
     # Volgorde telt: de laatst toegevoegde middleware draait als eerste. De sessie moet
     # er zijn voordat de loginvereiste kijkt of je bent ingelogd.
@@ -78,6 +82,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         same_site="lax",
         https_only=settings.secure_cookies,
     )
+
+    @app.exception_handler(NietIngelogd)
+    async def opnieuw_inloggen(request: Request, exc: NietIngelogd):
+        request.session.clear()
+        return naar_login(request)
 
     @app.exception_handler(StarletteHTTPException)
     async def foutpagina(request: Request, exc: StarletteHTTPException):

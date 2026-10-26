@@ -28,6 +28,9 @@
   <header class="kopbalk">
     <a class="merk" href="/" aria-label="Fond, naar het overzicht">{% include "partials/merk.svg" %}</a>
     <span class="offline-label" hidden>offline</span>
+    <a class="account-knop" href="/account" aria-label="Je account"{% if request.url.path == '/account' %} aria-current="page"{% endif %}>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20c1.2-3.5 4-5 7.5-5s6.3 1.5 7.5 5"/></svg>
+    </a>
     <button class="thema-knop" type="button" aria-label="Wissel licht en donker" data-thema-knop>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
     </button>

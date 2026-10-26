@@ -18,7 +18,8 @@ class Settings(BaseSettings):
     content_dir: Path = PROJECT_ROOT / "content"
     data_dir: Path = PROJECT_ROOT / "data"
 
-    # Argon2-hash van het wachtwoord. Maak er een met: `uv run fond hash-wachtwoord`.
+    # Alleen voor gegevens van vóór de accounts: het oude wachtwoord (Argon2-hash)
+    # wordt bij het opstarten het wachtwoord van het account "eigenaar".
     password_hash: str = ""
     # Sleutel waarmee de sessiecookie wordt ondertekend. Lang en willekeurig.
     secret_key: str = "dev-only-verander-mij"
@@ -26,7 +27,10 @@ class Settings(BaseSettings):
     secure_cookies: bool = False
     # Hoe lang je ingelogd blijft (dagen). Lang, want het is een app op je telefoon.
     session_days: int = 90
-    # Vaste sleutel voor de widget op je telefoon (GET /api/widget). Leeg = uit.
+    # Mag iedereen zelf een account maken via /aanmelden? Zet op false om dat te sluiten.
+    registratie: bool = True
+    # Oude, vaste widgetsleutel (van vóór de accounts): geeft het eerste account.
+    # Nieuwe sleutels maak je per account op /account. Leeg = uit.
     widget_token: str = ""
 
     @field_validator("password_hash")

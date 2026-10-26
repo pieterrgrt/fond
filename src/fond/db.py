@@ -1,4 +1,5 @@
-"""De database: alleen wat jij doet (voortgang, reflecties, je boodschappenlijst).
+"""De database: de accounts, en wat ieder doet (voortgang, reflecties, de
+boodschappenlijst). Alles daarvan hoort bij één gebruiker.
 
 De inhoud zelf staat in git. Lessen worden hier aangeduid met hun `id` uit de
 frontmatter, niet met de bestandsnaam, zodat je bestanden kunt hernoemen.
@@ -10,6 +11,7 @@ from datetime import date, datetime
 from sqlalchemy import (
     Date,
     DateTime,
+    ForeignKey,
     Integer,
     String,
     Text,
@@ -25,12 +27,39 @@ class Base(DeclarativeBase):
     pass
 
 
+class Gebruiker(Base):
+    """Een account. Het e-mailadres is de inlognaam (kleine letters)."""
+
+    __tablename__ = "gebruiker"
+    # Nooit een id hergebruiken: een cookie van een verwijderd account mag niet
+    # opeens bij een nieuw account horen.
+    __table_args__ = {"sqlite_autoincrement": True}
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    naam: Mapped[str] = mapped_column(String(100))
+    wachtwoord_hash: Mapped[str] = mapped_column(String(200))
+    # Hoort bij elke sessiecookie. Ophogen (bv. na een nieuw wachtwoord) logt je
+    # overal uit.
+    sessie_versie: Mapped[int] = mapped_column(Integer, default=1)
+    # SHA-256 van de widgetsleutel; de sleutel zelf zie je één keer.
+    widget_sleutel: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    aangemaakt: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+def gebruiker_kolom(primary_key: bool = False) -> Mapped[int]:
+    return mapped_column(
+        ForeignKey("gebruiker.id", ondelete="CASCADE"), primary_key=primary_key, index=True
+    )
+
+
 class Reflectie(Base):
     """'Proeven': wat je na het koken vastlegt. Een les is af als er één is."""
 
     __tablename__ = "reflectie"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    gebruiker_id: Mapped[int] = gebruiker_kolom()
     les_id: Mapped[str] = mapped_column(String(100), index=True)
     gekookt_op: Mapped[date] = mapped_column(Date)
     porties: Mapped[int] = mapped_column(Integer, default=1)
@@ -51,6 +80,7 @@ class Vinkje(Base):
 
     __tablename__ = "vinkje"
 
+    gebruiker_id: Mapped[int] = gebruiker_kolom(primary_key=True)
     les_id: Mapped[str] = mapped_column(String(100), primary_key=True)
     punt: Mapped[str] = mapped_column(String(16), primary_key=True)
     aangevinkt: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -61,6 +91,7 @@ class BeheersteModule(Base):
 
     __tablename__ = "beheerste_module"
 
+    gebruiker_id: Mapped[int] = gebruiker_kolom(primary_key=True)
     module_id: Mapped[str] = mapped_column(String(100), primary_key=True)
     op: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
@@ -70,6 +101,7 @@ class LijstItem(Base):
 
     __tablename__ = "lijst_item"
 
+    gebruiker_id: Mapped[int] = gebruiker_kolom(primary_key=True)
     les_id: Mapped[str] = mapped_column(String(100), primary_key=True)
     porties: Mapped[int] = mapped_column(Integer)
     toegevoegd: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

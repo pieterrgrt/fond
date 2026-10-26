@@ -11,6 +11,7 @@ lopen als rode draad door de cursus. Boodschappen gaan uit van de Aldi Süd.
 - **Porties schalen** (×1 tot ×6), met slimme afronding
 - **Boodschappenlijst** per les of per week, op volgorde van je route door de winkel
 - **Logboek** van alles wat je hebt gekookt
+- **Accounts**: iedereen meldt zich zelf aan en heeft een eigen voortgang, logboek en lijst
 - **PWA**: installeerbaar op je beginscherm, lessen werken offline
 
 Gebouwd met Python (FastAPI), server-rendered HTML met een beetje HTMX, en SQLite.
@@ -24,11 +25,11 @@ Nodig: [uv](https://docs.astral.sh/uv/) (installeert zelf de juiste Python).
 
 ```sh
 uv sync                       # afhankelijkheden installeren
-uv run fond hash-wachtwoord   # kies een wachtwoord; zet de twee regels in .env
+uv run fond sleutel >> .env    # geheime sleutel voor de sessiecookies
 uv run uvicorn fond.main:create_app --factory --reload --port 8098
 ```
 
-Open <http://localhost:8098>. Lokaal hoeft `FOND_SECURE_COOKIES` niet aan (de
+Open <http://localhost:8098> en maak via *Meld je aan* een account. Lokaal hoeft `FOND_SECURE_COOKIES` niet aan (de
 standaard is uit); op de server staat hij aan, want daar is alles HTTPS.
 
 Je gegevens (database en foto's) komen in `data/`. Die map staat niet in git.
@@ -65,7 +66,7 @@ internet ─▶ :443 SNI-router ─▶ 127.0.0.1:8444 nginx (TLS) ─▶ 127.0.0
    ```sh
    cp .env.example .env
    docker compose build
-   docker compose run --rm fond fond hash-wachtwoord   # plak de uitvoer in .env
+   docker compose run --rm fond fond sleutel   # plak de uitvoer in .env
    ```
 4. **Datamap** (de container draait als gebruiker 1000, niet als root):
    ```sh
@@ -85,7 +86,9 @@ internet ─▶ :443 SNI-router ─▶ 127.0.0.1:8444 nginx (TLS) ─▶ 127.0.0
    ```
 8. **SNI-router**: als die per domein routeert, voeg `fond.regoort.me` toe met als
    doel `127.0.0.1:8444` (zoals je andere sites).
-9. **Installeren op je telefoon**: open <https://fond.regoort.me> in Safari, log in,
+9. **Account maken**: open <https://fond.regoort.me>, kies *Meld je aan* en maak je
+   account.
+10. **Installeren op je telefoon**: open <https://fond.regoort.me> in Safari, log in,
     en kies *Deel → Zet op beginscherm*.
 
 ### Bijwerken
@@ -103,6 +106,33 @@ en staat de melding in `docker compose logs fond`. Controleer daarom eerst met
 `uv run fond check` (lokaal) of `docker compose run --rm fond fond check`.
 
 Databasewijzigingen (migraties) worden bij het opstarten automatisch toegepast.
+
+### Van één wachtwoord naar accounts
+
+Draaide je Fond al vóór de accounts (met `FOND_PASSWORD_HASH` in `.env`)? Dan zet de
+migratie al je bestaande voortgang, reflecties, foto's en je lijst in één account:
+
+1. Werk bij zoals hierboven (`git pull` en `docker compose up -d --build`).
+   **Maak eerst een back-up** (`docker compose exec fond fond backup`): deze
+   migratie kan niet terug.
+2. Log in met e-mailadres **`eigenaar`** en je oude wachtwoord.
+3. Ga naar *Account* (het poppetje rechtsboven) en vul je eigen e-mailadres in.
+   Daarmee log je voortaan in. `FOND_PASSWORD_HASH` mag daarna uit `.env`.
+4. Gebruik je de widget? `FOND_WIDGET_TOKEN` blijft werken voor dit eerste account.
+   Je kunt ook op *Account* een nieuwe sleutel maken en de oude uit `.env` halen.
+
+### Accounts beheren
+
+- **Aanmelden sluiten**: zet `FOND_REGISTRATIE=false` in `.env` en herstart. Wie al
+  een account heeft, kan gewoon blijven inloggen.
+- **Alle accounts zien**: `docker compose exec fond fond gebruikers`
+- **Wachtwoord kwijt**: Fond verstuurt geen mail, dus jij zet een nieuw wachtwoord:
+  `docker compose exec fond fond wachtwoord-herstellen iemand@example.com`. Die
+  persoon is daarna op al zijn toestellen uitgelogd.
+- Iedereen kan zijn naam, e-mailadres en wachtwoord zelf wijzigen op *Account*, en
+  daar ook zijn account met alles erop en eraan verwijderen.
+- Er kunnen per IP-adres hooguit 3 accounts per uur bij komen, en 30 per uur in
+  totaal. Zo kan niemand de server volschrijven.
 
 ### Back-ups
 
@@ -212,9 +242,9 @@ boodschappenlijst uit hoeveel je moet kopen.
 | --- | --- | --- |
 | Webframework | FastAPI + Jinja2 | Python, expliciet: je ziet hoe een verzoek door de app loopt. Licht genoeg voor een CX23. |
 | Interactie | HTMX + een beetje eigen JS | Server-rendered pagina's. Alleen de kookmodus (timers, Wake Lock) en offline werken vragen JavaScript. |
-| Database | SQLite (WAL) + Alembic | Eén gebruiker: een bestand volstaat. Alembic past het schema aan zonder data te verliezen. |
+| Database | SQLite (WAL) + Alembic | Een handvol gebruikers: een bestand volstaat. Alembic past het schema aan zonder data te verliezen. |
 | Inhoud | Markdown + YAML in git | Lessen zijn data, geen code. Pydantic valideert alles bij het opstarten. |
-| Inloggen | Argon2-hash in `.env`, ondertekende cookie | Basic auth werkt slecht in een geïnstalleerde PWA op iOS. Pogingen zijn beperkt per IP en in totaal. |
+| Inloggen | Accounts met Argon2-hash in de database, ondertekende cookie | Basic auth werkt slecht in een geïnstalleerde PWA op iOS. Pogingen zijn beperkt per IP en in totaal. Een nieuw wachtwoord logt je overal uit. |
 | Offline | Service worker | Pagina's: eerst netwerk, dan de bewaarde kopie. Statische bestanden met versie-hash uit de cache. |
 | Beveiliging | CSP zonder inline scripts | Alleen code van de eigen server kan draaien. Foto's verliezen hun EXIF (GPS). |
 
@@ -226,7 +256,7 @@ Code-indeling (`src/fond/`):
 - `boodschappen.py` — lijsten samenvoegen en sorteren op de looproute
 - `herhaling.py` — welke technieken toe zijn aan herhaling
 - `db.py`, `migrations/` — de database
-- `auth.py` — inloggen
+- `auth.py` — ingelogd blijven en de sessiecookie; `gebruikers.py` — accounts en wachtwoorden
 - `web/routes.py` — alle pagina's; `templates/` en `static/` — HTML, CSS en JS
 
 De kernlogica (schalen, ontgrendelen, lijsten, herhaling) is los van web en database

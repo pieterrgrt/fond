@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titel %}Aanmelden{% endblock %}
+{% block body_klasse %}login-pagina{% endblock %}
+{% block body %}
+<main class="login">
+  <h1 class="merk-groot" aria-label="Fond">{% include "partials/merk.svg" %}</h1>
+  {% if settings.registratie %}
+  <p class="ondertitel">Maak een account en begin bij les één. Je voortgang, logboek en boodschappenlijst zijn alleen van jou.</p>
+  <form method="post" action="/aanmelden" class="kaart">
+    <label>Naam
+      <input name="naam" type="text" autocomplete="name" maxlength="100" value="{{ naam }}" required autofocus>
+    </label>
+    <label>E-mailadres
+      <input name="email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false" maxlength="254" value="{{ email }}" required>
+    </label>
+    <label>Wachtwoord <span class="meta">(minstens 12 tekens)</span>
+      <input name="wachtwoord" type="password" autocomplete="new-password" minlength="12" required>
+    </label>
+    <label>Nog een keer
+      <input name="herhaling" type="password" autocomplete="new-password" minlength="12" required>
+    </label>
+    {% if fout %}<p class="fout" role="alert">{{ fout }}</p>{% endif %}
+    <button class="knop knop-hoofd" type="submit">Account maken</button>
+  </form>
+  {% else %}
+  <section class="kaart">
+    <p>Aanmelden is op dit moment gesloten. Vraag de beheerder van deze Fond om een account.</p>
+  </section>
+  {% endif %}
+  <p class="login-wissel">Heb je al een account? <a href="/login">Log in</a></p>
+</main>
+{% endblock %}
