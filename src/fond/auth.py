@@ -23,6 +23,7 @@ OPENBAAR = {
     "/sw.js",
     "/manifest.webmanifest",
     "/gezond",
+    "/health",
     "/offline",
     "/api/widget",
 }

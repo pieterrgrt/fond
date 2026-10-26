@@ -16,7 +16,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from PIL import Image, ImageOps, UnidentifiedImageError
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from fond import gebruikers
@@ -203,6 +204,16 @@ def uitloggen(request: Request):
 @router.get("/gezond")
 def gezond():
     return {"status": "ok"}
+
+
+@router.get("/health")
+def health(sessie: Db):
+    """Voor de autodeploy: 200 als de app draait en de database antwoordt."""
+    try:
+        sessie.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return JSONResponse({"status": "fout", "database": "onbereikbaar"}, status_code=503)
+    return {"status": "ok", "database": "ok"}
 
 
 # --- Widget voor de telefoon -------------------------------------------------------

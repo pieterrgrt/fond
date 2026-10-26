@@ -7,6 +7,7 @@ import pytest
 from argon2 import PasswordHasher
 from fastapi.testclient import TestClient
 from PIL import Image
+from sqlalchemy.exc import OperationalError
 
 from fond.config import PROJECT_ROOT, Settings
 from fond.main import create_app
@@ -68,6 +69,29 @@ def test_zonder_login_naar_loginpagina(client):
     assert r.headers["location"] == "/login?volgende=/les/mise-en-place"
     assert client.get("/gezond").json() == {"status": "ok"}
     assert client.get("/static/css/fond.css").status_code == 200
+
+
+def test_health_zonder_login(client):
+    r = client.get("/health", follow_redirects=False)
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok", "database": "ok"}
+
+
+def test_health_database_weg(app, client):
+    class KapotteSessie:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def execute(self, *_):
+            raise OperationalError("SELECT 1", {}, Exception("weg"))
+
+    app.state.sessies = KapotteSessie
+    r = client.get("/health")
+    assert r.status_code == 503
+    assert r.json()["database"] == "onbereikbaar"
 
 
 def test_htmx_zonder_login(client):
